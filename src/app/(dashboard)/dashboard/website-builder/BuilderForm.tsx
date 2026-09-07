@@ -390,6 +390,7 @@ export function BuilderForm({
                src={`/kos/${tenant.subdomain}`}
                className="absolute top-0 left-0 w-full h-full border-0 bg-white"
                title="Live Preview"
+               sandbox="allow-scripts allow-same-origin"
              />
           </div>
         </div>

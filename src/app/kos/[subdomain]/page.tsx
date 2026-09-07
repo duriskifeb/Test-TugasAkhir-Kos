@@ -22,7 +22,7 @@ export async function generateStaticParams() {
   }
 
   try {
-    const response = await fetch(`${supabaseUrl}/rest/v1/tenants?select=subdomain`, {
+    const response = await fetch(`${supabaseUrl}/rest/v1/tenants?select=subdomain&status=eq.VERIFIED`, {
       headers: {
         'apikey': supabaseKey,
         'Authorization': `Bearer ${supabaseKey}`
@@ -64,18 +64,19 @@ export default async function PublicTenantPage(props: {
   const params = await props.params;
   const supabase = await createClient();
 
-  // 1. Ambil data tenant
+  // 1. Ambil data tenant (Gunakan maybeSingle agar tidak melempar error keras jika tidak ketemu)
   const { data: tenant, error: tenantError } = await supabase
     .from("tenants")
     .select("*")
     .eq("subdomain", params.subdomain)
-    .single();
+    .maybeSingle();
 
   if (tenantError) {
-    console.error("Error fetching tenant:", tenantError);
+    console.error("Error fetching tenant:", JSON.stringify(tenantError));
   }
 
-  if (!tenant) {
+  // Jika tidak ditemukan atau belum diverifikasi, tampilkan 404
+  if (!tenant || tenant.status !== 'VERIFIED') {
     notFound();
   }
 

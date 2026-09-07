@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X, Calendar } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -25,17 +26,36 @@ export function BookingModal({ tenantId, room, buttonClass }: BookingModalProps)
   // Ref untuk menghentikan form menular ke elemen di luar
   const formRef = useRef<HTMLDivElement>(null);
 
+  // State untuk memastikan React Portal hanya jalan di browser
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Mencegah iframe/parent body scrolling saat modal terbuka
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = "hidden";
+      // Hanya kunci scroll, jangan ubah style berlebihan yang memicu reflow
+      document.body.classList.add('overflow-hidden');
     } else {
-      document.body.style.overflow = "unset";
+      document.body.classList.remove('overflow-hidden');
     }
     return () => {
-      document.body.style.overflow = "unset";
+      document.body.classList.remove('overflow-hidden');
     };
   }, [isOpen]);
+
+  // Jika komponen ini dirender, kita bisa cek URL params untuk langsung buka modal
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const bookingRoomId = urlParams.get('bookingRoomId');
+    if (bookingRoomId === room.id) {
+      setIsOpen(true);
+      // Bersihkan URL bar agar tidak pop-up terus saat di-refresh
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [room.id]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -77,7 +97,8 @@ export function BookingModal({ tenantId, room, buttonClass }: BookingModalProps)
       <button 
         type="button"
         onClick={(e) => {
-          e.preventDefault(); // Mencegah form action atau link behavior bawaan
+          e.preventDefault(); 
+          e.stopPropagation();
           setIsOpen(true);
         }}
         className={`w-full flex items-center justify-center gap-2 py-3 px-4 font-bold transition-all ${buttonClass}`}
@@ -85,21 +106,22 @@ export function BookingModal({ tenantId, room, buttonClass }: BookingModalProps)
         Ajukan Sewa
       </button>
 
-      {isOpen && (
+      {isOpen && mounted && createPortal(
         <div 
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-          onPointerDown={(e) => e.stopPropagation()} // Putuskan hubungan klik dengan luaran
-          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()} // Stop propagation from the backdrop overlay
+          className="fixed inset-0 flex items-center justify-center p-4 bg-black/60 z-[99999]"
         >
-          <div 
-            ref={formRef}
-            className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden"
-          >
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden relative">
             <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
               <h3 className="font-bold text-gray-900 text-lg">Formulir Pengajuan Sewa</h3>
               <button 
-                onClick={() => setIsOpen(false)}
-                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsOpen(false);
+                }}
+                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors relative z-10"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -119,7 +141,7 @@ export function BookingModal({ tenantId, room, buttonClass }: BookingModalProps)
                     type="button"
                     onClick={() => {
                        setIsOpen(false);
-                       setSuccess(false); // Reset form jika dibuka lagi
+                       setSuccess(false); 
                     }}
                     className="w-full mt-4 py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition-colors"
                   >
@@ -145,7 +167,6 @@ export function BookingModal({ tenantId, room, buttonClass }: BookingModalProps)
                       name="name" 
                       required 
                       placeholder="Masukkan nama Anda"
-                      onClick={(e) => e.stopPropagation()} // Pastikan klik tetap fokus di input
                       className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                     />
                   </div>
@@ -157,7 +178,6 @@ export function BookingModal({ tenantId, room, buttonClass }: BookingModalProps)
                       name="phone" 
                       required 
                       placeholder="0812xxxx..."
-                      onClick={(e) => e.stopPropagation()}
                       className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                     />
                   </div>
@@ -168,7 +188,6 @@ export function BookingModal({ tenantId, room, buttonClass }: BookingModalProps)
                       type="date" 
                       name="date" 
                       required 
-                      onClick={(e) => e.stopPropagation()}
                       className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                     />
                   </div>
@@ -179,7 +198,6 @@ export function BookingModal({ tenantId, room, buttonClass }: BookingModalProps)
                       name="notes" 
                       rows={2}
                       placeholder="Misal: Saya bawa motor..."
-                      onClick={(e) => e.stopPropagation()}
                       className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all resize-none"
                     ></textarea>
                   </div>
@@ -195,7 +213,8 @@ export function BookingModal({ tenantId, room, buttonClass }: BookingModalProps)
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

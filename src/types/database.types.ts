@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      bookings: {
+        Row: {
+          id: string
+          boarding_house_id: string
+          room_id: string
+          renter_name: string
+          renter_phone: string
+          renter_email: string | null
+          planned_check_in: string
+          additional_notes: string | null
+          status: "pending" | "approved" | "rejected"
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          boarding_house_id: string
+          room_id: string
+          renter_name: string
+          renter_phone: string
+          renter_email?: string | null
+          planned_check_in: string
+          additional_notes?: string | null
+          status?: "pending" | "approved" | "rejected"
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          boarding_house_id?: string
+          room_id?: string
+          renter_name?: string
+          renter_phone?: string
+          renter_email?: string | null
+          planned_check_in?: string
+          additional_notes?: string | null
+          status?: "pending" | "approved" | "rejected"
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_boarding_house_id_fkey"
+            columns: ["boarding_house_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       maintenance_requests: {
         Row: {
           created_at: string
@@ -32,7 +89,8 @@ export type Database = {
           reported_by: string
           room_id?: string | null
           status?: string
-          tenant_id: string
+          tenant_id?: string
+          profile_id?: string
           title: string
         }
         Update: {
@@ -43,6 +101,7 @@ export type Database = {
           room_id?: string | null
           status?: string
           tenant_id?: string
+          profile_id?: string
           title?: string
         }
         Relationships: [
@@ -116,7 +175,8 @@ export type Database = {
           paid_at?: string | null
           renter_id: string
           status?: string
-          tenant_id: string
+          tenant_id?: string
+          boarding_house_id?: string
         }
         Update: {
           amount?: number
@@ -127,6 +187,7 @@ export type Database = {
           renter_id?: string
           status?: string
           tenant_id?: string
+          boarding_house_id?: string
         }
         Relationships: [
           {
@@ -142,7 +203,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
       profiles: {
@@ -197,7 +258,8 @@ export type Database = {
           phone_number?: string | null
           room_id?: string | null
           status?: string
-          tenant_id: string
+          tenant_id?: string
+          boarding_house_id?: string
         }
         Update: {
           check_in_date?: string
@@ -208,6 +270,7 @@ export type Database = {
           room_id?: string | null
           status?: string
           tenant_id?: string
+          boarding_house_id?: string
         }
         Relationships: [
           {
@@ -277,9 +340,10 @@ export type Database = {
           created_at?: string
           email: string
           id?: string
-          name: string
+          name?: string
           status?: string
-          tenant_id: string
+          tenant_id?: string
+          profile_id?: string
         }
         Update: {
           created_at?: string
@@ -288,6 +352,7 @@ export type Database = {
           name?: string
           status?: string
           tenant_id?: string
+          profile_id?: string
         }
         Relationships: [
           {
