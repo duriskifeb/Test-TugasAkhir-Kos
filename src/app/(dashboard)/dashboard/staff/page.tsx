@@ -15,7 +15,7 @@ export default async function StaffPage() {
   // 1. Ambil data tenant dengan logic Multi-Cabang
   const { data: allTenants } = await supabase
     .from("tenants")
-    .select("id")
+    .select("id, name")
     .eq("owner_id", user.id);
 
   if (!allTenants || allTenants.length === 0) {
@@ -31,21 +31,22 @@ export default async function StaffPage() {
     tenant = { id: savedTenantId };
   }
 
-  // 2. Ambil data staf
+  // 2. Ambil data staf dari SEMUA tenant milik owner ini
+  const tenantIds = allTenants.map((t) => t.id);
   const { data: staffs } = await supabase
     .from("tenant_staffs")
-    .select("*")
-    .eq("tenant_id", tenant.id)
+    .select("*, tenants(name)")
+    .in("tenant_id", tenantIds)
     .order("created_at", { ascending: false });
 
   return (
     <div className="p-6 sm:p-8 max-w-4xl mx-auto">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">Manajemen Staf</h1>
-        <p className="text-gray-500 mt-1">Kelola akses penjaga kos atau karyawan Anda.</p>
+        <p className="text-gray-500 mt-1">Kelola akses penjaga kos atau karyawan Anda untuk cabang tertentu.</p>
       </div>
 
-      <StaffForm />
+      <StaffForm tenants={allTenants} />
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-6 border-b border-gray-100 bg-gray-50/50">
@@ -64,6 +65,9 @@ export default async function StaffPage() {
                   <p className="text-sm text-gray-500">{staff.email}</p>
                   
                   <div className="mt-2 flex items-center gap-2">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700">
+                      CABANG: {(staff as any).tenants?.name || "Tidak diketahui"}
+                    </span>
                     {staff.status === "active" ? (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-green-50 text-green-700">
                         <CheckCircle2 className="w-3 h-3" /> Aktif / Terdaftar

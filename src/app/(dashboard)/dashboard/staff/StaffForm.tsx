@@ -4,7 +4,7 @@ import { useState } from "react";
 import { addStaff } from "./actions";
 import { Loader2, Plus, Users, UserPlus } from "lucide-react";
 
-export function StaffForm() {
+export function StaffForm({ tenants }: { tenants: { id: string; name: string }[] }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -68,6 +68,22 @@ export function StaffForm() {
               placeholder="budi@example.com"
               className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:ring-2 focus:ring-[#3b23c6] outline-none transition-all"
             />
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-bold text-gray-700 mb-2">Pilih Cabang Kos</label>
+            <select
+              name="tenant_id"
+              required
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:ring-2 focus:ring-[#3b23c6] outline-none transition-all"
+            >
+              <option value="">-- Pilih Cabang yang Akan Ditugaskan --</option>
+              {tenants.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-2">Staf hanya bisa melihat dan mengelola data pada cabang yang dipilih ini.</p>
           </div>
         </div>
 
