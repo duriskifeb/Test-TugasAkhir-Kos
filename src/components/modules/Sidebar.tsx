@@ -17,20 +17,26 @@ import {
   Wrench
 } from "lucide-react";
 
-const mainNavItems = [
+const allNavItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Boarding Houses", href: "/dashboard/houses", icon: Home },
+  { name: "Boarding Houses", href: "/dashboard/houses", icon: Home, adminOnly: true },
   { name: "Rooms", href: "/dashboard/rooms", icon: BedDouble },
   { name: "Bookings", href: "/dashboard/bookings", icon: CalendarCheck },
   { name: "Tenants", href: "/dashboard/tenants", icon: Users },
   { name: "Payments", href: "/dashboard/payments", icon: CreditCard },
   { name: "Reports", href: "/dashboard/reports", icon: BarChart3 },
   { name: "Keluhan", href: "/dashboard/maintenance", icon: Wrench },
-  { name: "Staff Management", href: "/dashboard/staff", icon: UserCog },
+  { name: "Staff Management", href: "/dashboard/staff", icon: UserCog, adminOnly: true },
 ];
 
 export function Sidebar({ hasBoardingHouse = true, role = "tenant" }: { hasBoardingHouse?: boolean, role?: string }) {
   const pathname = usePathname();
+
+  // Filter navigasi berdasarkan role. "staff" tidak melihat menu adminOnly
+  const mainNavItems = allNavItems.filter(item => {
+    if (role === "staff" && item.adminOnly) return false;
+    return true;
+  });
 
   return (
     <aside className="w-64 min-h-screen bg-[#f8f9fa] border-r border-gray-200 flex flex-col hidden md:flex">
@@ -43,9 +49,6 @@ export function Sidebar({ hasBoardingHouse = true, role = "tenant" }: { hasBoard
       {/* Main Navigation */}
       <nav className="flex-1 px-3 space-y-1">
         {hasBoardingHouse && mainNavItems.map((item) => {
-          // Hide Staff Management for staff
-          if (role === "staff" && item.name === "Staff Management") return null;
-
           const isActive = pathname === item.href;
           return (
             <Link
