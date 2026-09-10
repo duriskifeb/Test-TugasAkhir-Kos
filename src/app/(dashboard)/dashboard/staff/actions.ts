@@ -41,7 +41,7 @@ export async function addStaff(formData: FormData) {
     tenant_id: tenant.id,
     name,
     email,
-    status: "pending"
+    status: "active" // Langsung diubah menjadi aktif saat ditambahkan
   });
 
   if (error) {

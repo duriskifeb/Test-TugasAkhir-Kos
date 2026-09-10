@@ -9,7 +9,7 @@ export async function getBookings() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Unauthorized", data: null };
 
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  const { data: profile } = await supabase.from("profiles").select("role, email").eq("id", user.id).single();
   let tenantId = null;
 
   if (profile?.role === "staff") {
@@ -17,7 +17,6 @@ export async function getBookings() {
       .from("tenant_staffs")
       .select("tenant_id")
       .eq("email", user.email || "")
-      .eq("status", "active")
       .maybeSingle();
       
     tenantId = staffData?.tenant_id;

@@ -66,7 +66,7 @@ export default async function StaffPage() {
                   <div className="mt-2 flex items-center gap-2">
                     {staff.status === "active" ? (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-green-50 text-green-700">
-                        <CheckCircle2 className="w-3 h-3" /> Aktif
+                        <CheckCircle2 className="w-3 h-3" /> Aktif / Terdaftar
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700">
