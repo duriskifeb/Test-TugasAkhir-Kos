@@ -6,8 +6,7 @@ import {
   Fingerprint, 
   LayoutDashboard, 
   ShieldCheck, 
-  Users, 
-  Activity
+  Users
 } from "lucide-react";
 
 export function AdminSidebar() {
@@ -17,7 +16,6 @@ export function AdminSidebar() {
     { name: "Overview", href: "/admin/dashboard", icon: LayoutDashboard },
     { name: "Validasi Kos", href: "/admin/verifikasi", icon: ShieldCheck },
     { name: "Manajemen Pengguna", href: "/admin/users", icon: Users },
-    { name: "Sistem & Log", href: "/admin/system", icon: Activity },
   ];
 
   return (

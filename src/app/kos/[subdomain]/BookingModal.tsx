@@ -152,6 +152,9 @@ export function BookingModal({ tenantId, room, buttonClass }: BookingModalProps)
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl mb-4 text-sm text-indigo-800 font-medium flex justify-between items-center">
                     <span>Kamar: {room.name}</span>
+                    <span className="font-bold text-[#3b23c6]">
+                      {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(room.price)}/bln
+                    </span>
                   </div>
 
                   {error && (

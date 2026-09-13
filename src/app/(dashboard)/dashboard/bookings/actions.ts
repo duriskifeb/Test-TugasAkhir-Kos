@@ -91,7 +91,7 @@ export async function updateBookingStatus(formData: FormData) {
     const { data: newRenter, error: renterError } = await supabase
       .from("renters")
       .insert({
-        boarding_house_id: bookingData.boarding_house_id,
+        tenant_id: bookingData.boarding_house_id, // DIUBAH DARI boarding_house_id
         room_id: bookingData.room_id,
         full_name: bookingData.renter_name,
         phone_number: bookingData.renter_phone,
@@ -103,7 +103,7 @@ export async function updateBookingStatus(formData: FormData) {
 
     if (renterError) {
        console.error("Gagal membuat penghuni otomatis:", renterError);
-       // Walau gagal insert penghuni, status booking tetap approved. Idealnya ada trigger, tapi kita biarkan lanjut.
+       // Walau gagal insert penghuni, status booking tetap approved.
     } else {
         // b. Ubah status kamar menjadi Terisi (Occupied)
         await supabase
@@ -117,24 +117,30 @@ export async function updateBookingStatus(formData: FormData) {
         const dueDate = new Date(checkInDate);
         dueDate.setDate(dueDate.getDate() + 7);
         
-        // Asumsi harga per bulan didapat dari relasi `rooms` yang kita SELECT di awal (rooms.price)
-        // PGlite/Supabase returns relation as array or object depending on schema. 
-        const roomPrice = Array.isArray(bookingData.rooms) 
-            ? bookingData.rooms[0]?.price 
-            : bookingData.rooms?.price;
+        // Ambil harga kamar dari database lagi secara eksplisit untuk mencegah undefined
+        const { data: roomData } = await supabase
+            .from("rooms")
+            .select("price")
+            .eq("id", bookingData.room_id)
+            .single();
 
-        if (newRenter && roomPrice) {
+        const roomPrice = roomData?.price || 0;
+
+        if (newRenter) {
             const newPayment: any = {
                 tenant_id: bookingData.boarding_house_id,
-                room_id: bookingData.room_id,
                 renter_id: newRenter.id,
                 amount: roomPrice,
                 due_date: dueDate.toISOString().split('T')[0],
-                status: "unpaid"
+                status: "unpaid" // Menggunakan unpaid karena pending tidak diizinkan oleh schema database Anda
             };
-            await supabase
+            const { error: paymentError } = await supabase
               .from("payments")
               .insert(newPayment);
+
+            if (paymentError) {
+                console.error("Gagal membuat tagihan pembayaran:", paymentError);
+            }
         }
     }
   }

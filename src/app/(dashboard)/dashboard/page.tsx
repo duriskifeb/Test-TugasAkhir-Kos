@@ -120,6 +120,14 @@ export default async function DashboardPage() {
       .eq("tenant_id", tenantId)
       .eq("status", "active");
     metrics.newTenants = newTenantsCount || 0;
+
+    // 4. Pending Bookings
+    const { count: pendingCount } = await supabase
+      .from("bookings")
+      .select("*", { count: 'exact', head: true })
+      .eq("boarding_house_id", tenantId)
+      .eq("status", "pending");
+    metrics.pendingBookings = pendingCount || 0;
   }
 
   return (

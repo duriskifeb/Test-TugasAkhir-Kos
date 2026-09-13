@@ -9,20 +9,21 @@ import {
   CalendarCheck,
   Users,
   CreditCard,
-  BarChart3,
   UserCog,
   MonitorSmartphone,
-  Settings
+  Settings,
+  Wrench
 } from "lucide-react";
 
 const allNavItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Boarding Houses", href: "/dashboard/houses", icon: Home, adminOnly: true },
-  { name: "Rooms", href: "/dashboard/rooms", icon: BedDouble },
-  { name: "Bookings", href: "/dashboard/bookings", icon: CalendarCheck },
-  { name: "Tenants", href: "/dashboard/tenants", icon: Users },
-  { name: "Payments", href: "/dashboard/payments", icon: CreditCard },
-  { name: "Staff Management", href: "/dashboard/staff", icon: UserCog, adminOnly: true },
+  { name: "Manajemen Kos", href: "/dashboard/houses", icon: Home, adminOnly: true },
+  { name: "Kamar", href: "/dashboard/rooms", icon: BedDouble },
+  { name: "Pengajuan Booking", href: "/dashboard/bookings", icon: CalendarCheck },
+  { name: "Penghuni", href: "/dashboard/tenants", icon: Users },
+  { name: "Pembayaran", href: "/dashboard/payments", icon: CreditCard },
+  { name: "Keluhan & Maintenance", href: "/dashboard/maintenance", icon: Wrench },
+  { name: "Manajemen Staf", href: "/dashboard/staff", icon: UserCog, adminOnly: true },
 ];
 
 export function Sidebar({ hasBoardingHouse = true, role = "tenant" }: { hasBoardingHouse?: boolean, role?: string }) {
@@ -69,7 +70,7 @@ export function Sidebar({ hasBoardingHouse = true, role = "tenant" }: { hasBoard
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold bg-[#ede9fe] text-[#3b23c6] hover:bg-[#ddd6fe] transition-colors"
             >
               <MonitorSmartphone className="w-5 h-5 text-[#3b23c6]" />
-              Website Builder
+              Kustomisasi Website
             </Link>
           </div>
         )}

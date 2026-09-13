@@ -2,17 +2,19 @@
 
 import { 
   Calendar, 
-  ArrowUpRight, 
   ArrowRight,
   PlusSquare,
   Home,
   UserPlus,
-  CheckCircle2,
-  BellRing,
-  AlertTriangle
+  AlertTriangle,
+  BedDouble,
+  Users,
+  CreditCard,
+  TrendingUp
 } from "lucide-react";
 import { useState } from "react";
 import { OnboardingWizard } from "@/components/modules/OnboardingWizard";
+import Link from "next/link";
 
 export function DashboardClient({ 
   boardingHouse,
@@ -34,7 +36,7 @@ export function DashboardClient({
 }) {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
 
-  // Jika Belum Punya Kos (Fase 2)
+  // Jika Belum Punya Kos
   if (!boardingHouse) {
     if (role === "staff") {
       return (
@@ -42,7 +44,7 @@ export function DashboardClient({
           <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mb-6">
             <UserPlus className="w-10 h-10 text-[#3b23c6]" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-3 tracking-tight">Selamat Datang, staff baru!</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-3 tracking-tight">Selamat Datang, Staf!</h1>
           <p className="text-gray-500 max-w-md mb-8 text-base">
             Akun Anda belum ditugaskan untuk mengelola properti kos manapun. Silakan hubungi Pemilik Kos untuk menambahkan Anda ke dalam sistem mereka.
           </p>
@@ -72,8 +74,11 @@ export function DashboardClient({
     );
   }
 
-  // Jika Sudah Punya Kos (Fase 4 & 5)
+  // Jika Sudah Punya Kos
   const isUnverified = boardingHouse.status === 'UNVERIFIED';
+
+  const formatRupiah = (amount: number) =>
+    new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount);
 
   return (
     <div className="p-6 sm:p-8 max-w-7xl mx-auto">
@@ -94,25 +99,23 @@ export function DashboardClient({
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Welcome back, {userName}</h1>
-          <p className="text-gray-500 mt-1">Here is what&apos;s happening across your properties today.</p>
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Selamat datang, {userName} 👋</h1>
+          <p className="text-gray-500 mt-1">Berikut ringkasan operasional kos Anda hari ini.</p>
         </div>
-        <div className="flex items-center bg-white border border-gray-200 rounded-lg p-1 shadow-sm">
-          <button className="px-4 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 rounded-md">Last 7 Days</button>
-          <button className="px-4 py-1.5 text-sm font-bold text-white bg-[#3b23c6] rounded-md shadow-sm">Last 30 Days</button>
-          <div className="w-px h-4 bg-gray-200 mx-2" />
-          <button className="p-1.5 text-gray-500 hover:text-gray-900">
-            <Calendar className="w-4 h-4" />
-          </button>
+        <div className="flex items-center bg-white border border-gray-200 rounded-lg p-2 px-3 shadow-sm gap-2">
+          <Calendar className="w-4 h-4 text-gray-400" />
+          <span className="text-sm font-medium text-gray-600">
+            {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+          </span>
         </div>
       </div>
 
       {/* Metrics Row */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
         
-        {/* Metric 1 */}
+        {/* Metric 1 - Tingkat Hunian */}
         <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col justify-between">
-          <h3 className="text-xs font-semibold text-gray-500 mb-1">Occupancy Rate</h3>
+          <h3 className="text-xs font-semibold text-gray-500 mb-1">Tingkat Hunian</h3>
           <div className="flex items-end gap-2">
             <span className="text-2xl font-bold text-[#3b23c6]">{metrics?.occupancyRate || 0}%</span>
           </div>
@@ -121,45 +124,44 @@ export function DashboardClient({
           </div>
         </div>
 
-        {/* Metric 2 */}
+        {/* Metric 2 - Pendapatan Bulan Ini */}
         <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col justify-between">
-          <h3 className="text-xs font-semibold text-gray-500 mb-1">Monthly Revenue</h3>
-          <span className="text-2xl font-bold text-gray-900">
-            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(metrics?.monthlyRevenue || 0)}
+          <h3 className="text-xs font-semibold text-gray-500 mb-1">Pendapatan Bulan Ini</h3>
+          <span className="text-xl font-bold text-gray-900">
+            {formatRupiah(metrics?.monthlyRevenue || 0)}
           </span>
         </div>
 
-        {/* Metric 3 */}
+        {/* Metric 3 - Kamar Tersedia */}
         <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col justify-between">
-          <h3 className="text-xs font-semibold text-gray-500 mb-1">Available Rooms</h3>
+          <h3 className="text-xs font-semibold text-gray-500 mb-1">Kamar Tersedia</h3>
           <div className="flex items-end gap-1">
             <span className="text-2xl font-bold text-gray-900">{metrics?.availableRooms || 0}</span>
             <span className="text-xs text-gray-500 mb-1">/ {metrics?.totalRooms || 0} total</span>
           </div>
         </div>
 
-        {/* Metric 4 (Highlighted) */}
+        {/* Metric 4 - Booking Menunggu (Highlighted) */}
         <div className="bg-[#f5f3ff] border border-[#d8b4fe] rounded-xl p-4 shadow-sm flex flex-col justify-between">
-          <h3 className="text-xs font-bold text-[#3b23c6] mb-1">Pending Bookings</h3>
+          <h3 className="text-xs font-bold text-[#3b23c6] mb-1">Booking Menunggu</h3>
           <span className="text-2xl font-bold text-gray-900">{metrics?.pendingBookings || 0}</span>
-          <button className="flex items-center text-xs font-bold text-[#3b23c6] hover:underline mt-2">
-            Review all <ArrowRight className="w-3 h-3 ml-1" />
-          </button>
+          <Link href="/dashboard/bookings" className="flex items-center text-xs font-bold text-[#3b23c6] hover:underline mt-2">
+            Tinjau semua <ArrowRight className="w-3 h-3 ml-1" />
+          </Link>
         </div>
 
-        {/* Metric 5 */}
+        {/* Metric 5 - Penghuni Aktif */}
         <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col justify-between">
-          <h3 className="text-xs font-semibold text-gray-500 mb-1">Active Tenants</h3>
+          <h3 className="text-xs font-semibold text-gray-500 mb-1">Penghuni Aktif</h3>
           <span className="text-2xl font-bold text-gray-900">{metrics?.newTenants || 0}</span>
         </div>
 
-        {/* Metric 6 */}
+        {/* Metric 6 - Estimasi Profit */}
         <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col justify-between">
-          <h3 className="text-xs font-semibold text-gray-500 mb-1">Profit (Net)</h3>
-          <span className="text-2xl font-bold text-gray-900">
-            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format((metrics?.monthlyRevenue || 0) * 0.85)}
+          <h3 className="text-xs font-semibold text-gray-500 mb-1">Est. Profit (85%)</h3>
+          <span className="text-xl font-bold text-gray-900">
+            {formatRupiah((metrics?.monthlyRevenue || 0) * 0.85)}
           </span>
-          <span className="text-xs text-gray-500 mt-2">Est. 85% Margin</span>
         </div>
       </div>
 
@@ -168,165 +170,181 @@ export function DashboardClient({
         
         {/* Left Column (Span 2) */}
         <div className="lg:col-span-2 space-y-8">
-          
-          {/* Revenue Trend Chart */}
+
+          {/* Ringkasan Status Operasional */}
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-            <div className="flex items-start justify-between mb-8">
+            <div className="flex items-start justify-between mb-6">
               <div>
-                <h2 className="text-lg font-bold text-gray-900">Revenue Trend</h2>
-                <p className="text-sm text-gray-500 mt-1">Performance over the last 6 months</p>
+                <h2 className="text-lg font-bold text-gray-900">Ringkasan Operasional</h2>
+                <p className="text-sm text-gray-500 mt-1">Status kamar dan penghuni kos Anda saat ini.</p>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-[#3b23c6]" />
-                  <span className="text-xs font-bold text-[#3b23c6]">Revenue</span>
+              <TrendingUp className="w-5 h-5 text-[#3b23c6]" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Total Kamar */}
+              <div className="bg-indigo-50 rounded-xl p-4 flex items-center gap-4">
+                <div className="w-10 h-10 bg-[#3b23c6] rounded-full flex items-center justify-center shrink-0">
+                  <BedDouble className="w-5 h-5 text-white" />
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-gray-300" />
-                  <span className="text-xs font-bold text-gray-400">Expenses</span>
+                <div>
+                  <p className="text-xs font-semibold text-indigo-700">Total Kamar</p>
+                  <p className="text-2xl font-bold text-gray-900">{metrics?.totalRooms || 0}</p>
+                </div>
+              </div>
+              {/* Penghuni Aktif */}
+              <div className="bg-green-50 rounded-xl p-4 flex items-center gap-4">
+                <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center shrink-0">
+                  <Users className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-green-700">Penghuni Aktif</p>
+                  <p className="text-2xl font-bold text-gray-900">{metrics?.newTenants || 0}</p>
+                </div>
+              </div>
+              {/* Pendapatan */}
+              <div className="bg-amber-50 rounded-xl p-4 flex items-center gap-4">
+                <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center shrink-0">
+                  <CreditCard className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-amber-700">Pendapatan Bulan Ini</p>
+                  <p className="text-lg font-bold text-gray-900">{formatRupiah(metrics?.monthlyRevenue || 0)}</p>
                 </div>
               </div>
             </div>
-            
-            {/* Chart Skeleton (SVG Curve) */}
-            <div className="h-64 w-full relative">
-              <div className="absolute inset-0 flex flex-col justify-between">
-                {[1,2,3,4,5].map((i) => (
-                  <div key={i} className="w-full h-px bg-gray-100" />
-                ))}
+            {/* Progress Bar Hunian */}
+            <div className="mt-6">
+              <div className="flex justify-between text-sm font-semibold text-gray-700 mb-2">
+                <span>Tingkat Hunian Keseluruhan</span>
+                <span className="text-[#3b23c6]">{metrics?.occupancyRate || 0}%</span>
               </div>
-              <svg className="absolute inset-0 h-full w-full" preserveAspectRatio="none" viewBox="0 0 100 100">
-                <path d="M 0,80 Q 25,70 50,50 T 100,30" fill="none" stroke="#3b23c6" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-              </svg>
-              <div className="absolute bottom-[-24px] left-0 right-0 flex justify-between text-[10px] font-semibold text-gray-500 uppercase">
-                <span>Jan</span>
-                <span>Feb</span>
-                <span>Mar</span>
-                <span>Apr</span>
-                <span>May</span>
-                <span>Jun</span>
+              <div className="w-full bg-gray-100 h-3 rounded-full overflow-hidden">
+                <div
+                  className="bg-[#3b23c6] h-full rounded-full transition-all duration-1000"
+                  style={{ width: `${metrics?.occupancyRate || 0}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-xs text-gray-400 mt-1">
+                <span>{(metrics?.totalRooms || 0) - (metrics?.availableRooms || 0)} kamar terisi</span>
+                <span>{metrics?.availableRooms || 0} kamar kosong</span>
               </div>
             </div>
           </div>
 
-          {/* Updates & Occupancy Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            
-            {/* Recent Updates */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-base font-bold text-gray-900">Recent Updates</h2>
-                <button className="text-xs font-bold text-[#3b23c6] hover:underline">View all</button>
-              </div>
-              <div className="space-y-6">
-                <div className="flex gap-4">
-                  <div className="mt-1 w-8 h-8 rounded-full bg-[#bbf7d0] flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="w-4 h-4 text-green-700" />
+          {/* Panduan Alur Sistem */}
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+            <h2 className="text-base font-bold text-gray-900 mb-4">Alur Sistem Kos</h2>
+            <div className="flex flex-col sm:flex-row items-stretch gap-2">
+              {[
+                { icon: "🌐", label: "Calon Penyewa", desc: "Lihat website & isi form booking" },
+                { icon: "📋", label: "Pengajuan Booking", desc: "Owner/Staf tinjau & setujui" },
+                { icon: "🏠", label: "Penghuni Aktif", desc: "Otomatis terdaftar" },
+                { icon: "💳", label: "Tagihan Dibuat", desc: "Otomatis muncul di Pembayaran" },
+              ].map((item, i, arr) => (
+                <div key={i} className="flex sm:flex-col items-center gap-2 flex-1">
+                  <div className="flex-1 bg-gray-50 border border-gray-100 rounded-xl p-3 text-center w-full">
+                    <div className="text-2xl mb-1">{item.icon}</div>
+                    <p className="text-xs font-bold text-gray-800">{item.label}</p>
+                    <p className="text-[10px] text-gray-500 mt-0.5">{item.desc}</p>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Payment received from Room 402</p>
-                    <p className="text-xs text-gray-500 mt-1">2 hours ago • $450.00</p>
-                  </div>
+                  {i < arr.length - 1 && (
+                    <span className="text-gray-300 font-bold text-lg sm:hidden">↓</span>
+                  )}
+                  {i < arr.length - 1 && (
+                    <span className="text-gray-300 font-bold text-lg hidden sm:block">›</span>
+                  )}
                 </div>
-                <div className="flex gap-4">
-                  <div className="mt-1 w-8 h-8 rounded-full bg-[#fef3c7] flex items-center justify-center shrink-0">
-                    <BellRing className="w-4 h-4 text-amber-700" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">New booking request: Unit A-12</p>
-                    <p className="text-xs text-gray-500 mt-1">5 hours ago • John Doe</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Occupancy by Property */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-              <h2 className="text-base font-bold text-gray-900 mb-6">Occupancy by Property</h2>
-              <div className="space-y-5">
-                <div>
-                  <div className="flex justify-between text-sm font-medium text-gray-900 mb-2">
-                    <span>The Grand Dormitory</span>
-                    <span>98%</span>
-                  </div>
-                  <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                    <div className="bg-[#3b23c6] w-[98%] h-full rounded-full" />
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-sm font-medium text-gray-900 mb-2">
-                    <span>Silicon Valley House</span>
-                    <span>85%</span>
-                  </div>
-                  <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                    <div className="bg-[#3b23c6] w-[85%] h-full rounded-full" />
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-sm font-medium text-gray-900 mb-2">
-                    <span>Green Park Suites</span>
-                    <span>91%</span>
-                  </div>
-                  <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                    <div className="bg-[#3b23c6] w-[91%] h-full rounded-full" />
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
+
         </div>
 
         {/* Right Column (Span 1) */}
-        <div className="space-y-8">
+        <div className="space-y-6">
           
-          {/* Promo Card */}
-          <div className="bg-[#4f46e5] rounded-2xl p-6 shadow-lg text-white">
-            <h2 className="text-xl font-bold mb-2">Launch your site</h2>
-            <p className="text-sm text-indigo-100 mb-6 leading-relaxed">
-              Create a stunning booking website for your boarding houses in minutes. No coding required.
-            </p>
-            <button 
-              disabled={isUnverified}
-              className="w-full bg-white text-[#4f46e5] font-bold py-3 px-4 rounded-xl text-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Home className="w-4 h-4" />
-              Open Website Builder
-            </button>
-            {isUnverified && (
-              <p className="text-[10px] text-center mt-2 opacity-80">
-                Tersedia setelah akun Anda diverifikasi
+          {/* Promo Card - Website Builder (hanya untuk Owner) */}
+          {role !== "staff" && (
+            <div className="bg-[#4f46e5] rounded-2xl p-6 shadow-lg text-white">
+              <h2 className="text-xl font-bold mb-2">Publikasikan Website Kos</h2>
+              <p className="text-sm text-indigo-100 mb-6 leading-relaxed">
+                Buat halaman promosi kos yang menarik dan profesional. Tanpa perlu keahlian coding.
               </p>
-            )}
-          </div>
+              {isUnverified ? (
+                <>
+                  <button
+                    disabled
+                    className="w-full bg-white text-[#4f46e5] font-bold py-3 px-4 rounded-xl text-sm opacity-50 cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    <Home className="w-4 h-4" />
+                    Buka Kustomisasi Website
+                  </button>
+                  <p className="text-[10px] text-center mt-2 opacity-80">
+                    Tersedia setelah akun Anda diverifikasi
+                  </p>
+                </>
+              ) : (
+                <Link
+                  href="/dashboard/website-builder"
+                  className="w-full bg-white text-[#4f46e5] font-bold py-3 px-4 rounded-xl text-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Home className="w-4 h-4" />
+                  Buka Kustomisasi Website
+                </Link>
+              )}
+            </div>
+          )}
 
-          {/* Quick Actions */}
+          {/* Aksi Cepat */}
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-            <h2 className="text-base font-bold text-gray-900 mb-4">Quick Actions</h2>
+            <h2 className="text-base font-bold text-gray-900 mb-4">Aksi Cepat</h2>
             <div className="space-y-3">
-              <button className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-[#3b23c6] hover:bg-[#f5f3ff] transition-all group">
-                <Home className="w-5 h-5 text-[#3b23c6]" />
-                <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Add Boarding House</span>
-              </button>
-              <button className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-[#3b23c6] hover:bg-[#f5f3ff] transition-all group">
+              {role !== "staff" && (
+                <Link href="/dashboard/houses" className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-[#3b23c6] hover:bg-[#f5f3ff] transition-all group">
+                  <Home className="w-5 h-5 text-[#3b23c6]" />
+                  <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Kelola Kos</span>
+                </Link>
+              )}
+              <Link href="/dashboard/rooms" className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-[#3b23c6] hover:bg-[#f5f3ff] transition-all group">
+                <BedDouble className="w-5 h-5 text-[#3b23c6]" />
+                <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Kelola Kamar</span>
+              </Link>
+              <Link href="/dashboard/bookings" className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-[#3b23c6] hover:bg-[#f5f3ff] transition-all group">
                 <PlusSquare className="w-5 h-5 text-[#3b23c6]" />
-                <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Add New Room</span>
-              </button>
-              <button className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-[#3b23c6] hover:bg-[#f5f3ff] transition-all group">
-                <UserPlus className="w-5 h-5 text-[#3b23c6]" />
-                <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Register Tenant</span>
-              </button>
+                <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 flex items-center gap-2">
+                  Tinjau Pengajuan Booking
+                  {(metrics?.pendingBookings || 0) > 0 && (
+                    <span className="inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white bg-red-500 rounded-full">
+                      {metrics?.pendingBookings}
+                    </span>
+                  )}
+                </span>
+              </Link>
+              <Link href="/dashboard/payments" className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-[#3b23c6] hover:bg-[#f5f3ff] transition-all group">
+                <CreditCard className="w-5 h-5 text-[#3b23c6]" />
+                <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Kelola Pembayaran</span>
+              </Link>
+              {role !== "staff" && (
+                <Link href="/dashboard/tenants" className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-[#3b23c6] hover:bg-[#f5f3ff] transition-all group">
+                  <Users className="w-5 h-5 text-[#3b23c6]" />
+                  <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Kelola Penghuni</span>
+                </Link>
+              )}
             </div>
           </div>
 
-          {/* Live Portfolio Map Placeholder */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm h-48 relative overflow-hidden flex flex-col">
-            <h2 className="text-xs font-bold text-gray-900 bg-white px-2 py-1 absolute top-4 left-4 z-10 rounded shadow-sm">Live Portfolio Map</h2>
-            <div className="absolute inset-0 bg-[#e2e8f0] opacity-50 flex items-center justify-center">
-              <div className="w-full h-full bg-[linear-gradient(to_right,#cbd5e1_1px,transparent_1px),linear-gradient(to_bottom,#cbd5e1_1px,transparent_1px)] bg-[size:1rem_1rem]" />
+          {/* Fitur Platform */}
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+            <h2 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-wider">Fitur Platform</h2>
+            <div className="space-y-2 text-xs text-gray-600">
+              <p className="flex items-center gap-2"><span className="text-green-500">✅</span> Sistem SaaS Multi-Tenant</p>
+              <p className="flex items-center gap-2"><span className="text-green-500">✅</span> Kustomisasi Website Builder</p>
+              <p className="flex items-center gap-2"><span className="text-green-500">✅</span> Manajemen Booking & Penghuni</p>
+              <p className="flex items-center gap-2"><span className="text-green-500">✅</span> Tagihan Otomatis dari Booking</p>
+              <p className="flex items-center gap-2"><span className="text-green-500">✅</span> Role-Based Access Control</p>
             </div>
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-[#3b23c6] rounded-full border-2 border-white shadow-[0_0_0_4px_rgba(59,35,198,0.2)]" />
-            <div className="absolute top-1/3 left-1/4 transform w-3 h-3 bg-[#3b23c6] rounded-full border-2 border-white shadow-[0_0_0_4px_rgba(59,35,198,0.2)]" />
           </div>
+
         </div>
       </div>
 
