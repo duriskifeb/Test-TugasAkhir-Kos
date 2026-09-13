@@ -12,9 +12,7 @@ import {
   BarChart3,
   UserCog,
   MonitorSmartphone,
-  Settings,
-  HelpCircle,
-  Wrench
+  Settings
 } from "lucide-react";
 
 const allNavItems = [
@@ -24,8 +22,6 @@ const allNavItems = [
   { name: "Bookings", href: "/dashboard/bookings", icon: CalendarCheck },
   { name: "Tenants", href: "/dashboard/tenants", icon: Users },
   { name: "Payments", href: "/dashboard/payments", icon: CreditCard },
-  { name: "Reports", href: "/dashboard/reports", icon: BarChart3 },
-  { name: "Keluhan", href: "/dashboard/maintenance", icon: Wrench },
   { name: "Staff Management", href: "/dashboard/staff", icon: UserCog, adminOnly: true },
 ];
 
@@ -87,13 +83,6 @@ export function Sidebar({ hasBoardingHouse = true, role = "tenant" }: { hasBoard
         >
           <Settings className="w-5 h-5 text-gray-500" />
           Settings
-        </Link>
-        <Link
-          href="/dashboard/support"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
-        >
-          <HelpCircle className="w-5 h-5 text-gray-500" />
-          Support
         </Link>
       </div>
     </aside>

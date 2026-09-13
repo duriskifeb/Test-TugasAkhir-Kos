@@ -11,20 +11,23 @@ export async function getPaymentsData() {
   if (!user) return { payments: [], renters: [] };
 
   // Ambil tenant_id
+  let tenantId = null;
   const { data: tenant } = await supabase
     .from("tenants")
     .select("id")
     .eq("owner_id", user.id)
     .single();
 
-  if (!tenant) {
+  if (tenant) {
+    tenantId = tenant.id;
+  } else {
     const { data: staff } = await supabase
       .from("tenant_staffs")
       .select("tenant_id")
-      .eq("profile_id", user.id)
+      .eq("email", user.email || "")
       .single();
     if (!staff) return { payments: [], renters: [] };
-    tenant.id = staff.tenant_id;
+    tenantId = staff.tenant_id;
   }
 
   // Fetch payments dan relasi ke renter & room
@@ -37,14 +40,14 @@ export async function getPaymentsData() {
         rooms ( name ) 
       )
     `)
-    .eq("tenant_id", tenant.id)
+    .eq("tenant_id", tenantId)
     .order("due_date", { ascending: false });
 
   // Fetch active renters untuk form tagihan baru
   const { data: renters, error: rentError } = await supabase
     .from("renters")
     .select(`id, full_name, rooms(name)`)
-    .eq("tenant_id", tenant.id)
+    .eq("tenant_id", tenantId)
     .eq("status", "active");
 
   return { 

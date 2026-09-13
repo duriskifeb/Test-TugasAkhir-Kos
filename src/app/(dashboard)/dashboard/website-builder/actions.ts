@@ -35,7 +35,7 @@ export async function saveWebsiteSettings(formData: FormData) {
   // 2. Ekstrak data tema
   const primaryColor = formData.get("primaryColor") as string;
   const fontFamily = formData.get("fontFamily") as string;
-  const theme = { primaryColor, fontFamily };
+  const theme: any = { primaryColor, fontFamily };
 
   // Update theme di tenants
   const templateStyle = formData.get("templateStyle") as string || "modern";

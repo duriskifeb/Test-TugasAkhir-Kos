@@ -135,7 +135,7 @@ export default async function PublicTenantPage(props: {
   };
 
   // Tema Template (modern, minimalist, bold)
-  const templateStyle = theme.templateStyle || "modern";
+  const templateStyle = (theme as any).templateStyle || "modern";
   
   // Fungsi penentu gaya berdasarkan template
   const getContainerClass = () => {
@@ -269,11 +269,11 @@ export default async function PublicTenantPage(props: {
                             {formatRupiah(room.price)}<span className="text-sm font-medium text-gray-500">/bulan</span>
                           </p>
                           
-                          {room.facilities && room.facilities.length > 0 && (
+                          {room.facilities && (room.facilities as any).length > 0 && (
                             <div className="mb-8">
                               <h4 className="text-sm font-bold text-gray-900 mb-3">Fasilitas Kamar:</h4>
                               <ul className="space-y-2">
-                                {room.facilities.map((fac: string, idx: number) => (
+                                {(room.facilities as string[]).map((fac: string, idx: number) => (
                                   <li key={idx} className="flex items-center text-sm text-gray-600">
                                     <CheckCircle2 className="w-4 h-4 text-primary mr-2 flex-shrink-0" />
                                     {fac}

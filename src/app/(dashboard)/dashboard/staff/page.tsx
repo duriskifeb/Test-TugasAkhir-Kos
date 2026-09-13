@@ -28,7 +28,10 @@ export default async function StaffPage() {
   
   let tenant = allTenants[0];
   if (savedTenantId && allTenants.some(t => t.id === savedTenantId)) {
-    tenant = { id: savedTenantId };
+    const foundTenant = allTenants.find(t => t.id === savedTenantId);
+    if (foundTenant) {
+        tenant = foundTenant;
+    }
   }
 
   // 2. Ambil data staf dari SEMUA tenant milik owner ini

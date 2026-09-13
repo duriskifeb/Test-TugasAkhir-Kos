@@ -93,9 +93,9 @@ export async function updateBookingStatus(formData: FormData) {
       .insert({
         boarding_house_id: bookingData.boarding_house_id,
         room_id: bookingData.room_id,
-        name: bookingData.renter_name,
-        phone: bookingData.renter_phone,
-        start_date: bookingData.planned_check_in, // gunakan rencana check-in sebagai tanggal mulai
+        full_name: bookingData.renter_name,
+        phone_number: bookingData.renter_phone,
+        check_in_date: bookingData.planned_check_in, // gunakan rencana check-in sebagai tanggal mulai
         status: "active"
       })
       .select()
@@ -124,16 +124,17 @@ export async function updateBookingStatus(formData: FormData) {
             : bookingData.rooms?.price;
 
         if (newRenter && roomPrice) {
-            await supabase
-              .from("payments")
-              .insert({
-                boarding_house_id: bookingData.boarding_house_id,
+            const newPayment: any = {
+                tenant_id: bookingData.boarding_house_id,
                 room_id: bookingData.room_id,
                 renter_id: newRenter.id,
                 amount: roomPrice,
                 due_date: dueDate.toISOString().split('T')[0],
-                status: "pending" // Belum lunas
-              });
+                status: "unpaid"
+            };
+            await supabase
+              .from("payments")
+              .insert(newPayment);
         }
     }
   }
