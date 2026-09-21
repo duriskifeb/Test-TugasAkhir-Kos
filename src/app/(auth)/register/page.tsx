@@ -15,6 +15,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [role, setRole] = useState<"owner" | "renter">("owner");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +44,7 @@ export default function RegisterPage() {
             data: {
               full_name: fullName,
               phone: phone,
+              role: role, // Kirim role ke metadata agar trigger supabase menangkapnya
             },
           },
         });
@@ -50,23 +52,34 @@ export default function RegisterPage() {
       if (signUpError) throw signUpError;
 
       if (signUpData.user) {
-        const { data: staffCheck } = await supabase
-          .from("tenant_staffs")
-          .select("id")
-          .eq("email", email)
-          .maybeSingle();
+        // Cek apakah dia staff (khusus jika mendaftar dengan email staff yang diundang)
+        // Kita abaikan jika dia memilih mendaftar sebagai renter
+        let finalRole = role;
+        let isStaff = false;
+        
+        if (role === "owner") {
+            const { data: staffCheck } = await supabase
+            .from("tenant_staffs")
+            .select("id")
+            .eq("email", email)
+            .maybeSingle();
 
-        const userRole = staffCheck ? "staff" : "owner";
+            if (staffCheck) {
+                finalRole = "staff";
+                isStaff = true;
+            }
+        }
 
+        // Upsert manual ke profiles (sebagai backup jika trigger gagal/lambat)
         await supabase.from("profiles").upsert({
           id: signUpData.user.id,
           full_name: fullName,
           phone: phone,
-          role: userRole,
+          role: finalRole,
           updated_at: new Date().toISOString(),
         });
 
-        if (staffCheck) {
+        if (isStaff) {
           await supabase
             .from("tenant_staffs")
             .update({ status: "active" })
@@ -92,12 +105,44 @@ export default function RegisterPage() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Daftar Akun</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Buat akun untuk mengelola kos Anda di Pintu Berkah
+            Buat akun untuk masuk ke Pintu Berkah
           </p>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
+          
+          {/* Pilihan Role */}
+          <div className="mb-4">
+             <label className="block text-sm font-medium text-gray-700 mb-2">
+              Daftar Sebagai
+            </label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="role"
+                  value="owner"
+                  checked={role === "owner"}
+                  onChange={() => setRole("owner")}
+                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">Pemilik Kos (SaaS)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="role"
+                  value="renter"
+                  checked={role === "renter"}
+                  onChange={() => setRole("renter")}
+                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">Penyewa Kos</span>
+              </label>
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Nama Lengkap
