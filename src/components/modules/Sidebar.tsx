@@ -12,28 +12,33 @@ import {
   UserCog,
   MonitorSmartphone,
   Settings,
-  Wrench
+  Wrench,
+  LineChart
 } from "lucide-react";
 
-const allNavItems = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Manajemen Kos", href: "/dashboard/houses", icon: Home, adminOnly: true },
-  { name: "Kamar", href: "/dashboard/rooms", icon: BedDouble },
-  { name: "Pengajuan Booking", href: "/dashboard/bookings", icon: CalendarCheck },
-  { name: "Penghuni", href: "/dashboard/tenants", icon: Users },
-  { name: "Pembayaran", href: "/dashboard/payments", icon: CreditCard },
-  { name: "Keluhan & Maintenance", href: "/dashboard/maintenance", icon: Wrench },
-  { name: "Manajemen Staf", href: "/dashboard/staff", icon: UserCog, adminOnly: true },
-];
-
-export function Sidebar({ hasBoardingHouse = true, role = "tenant" }: { hasBoardingHouse?: boolean, role?: string }) {
+export function Sidebar({ hasBoardingHouse = true, role = "owner" }: { hasBoardingHouse?: boolean, role?: string }) {
   const pathname = usePathname();
 
-  // Filter navigasi berdasarkan role. "staff" tidak melihat menu adminOnly
-  const mainNavItems = allNavItems.filter(item => {
-    if (role === "staff" && item.adminOnly) return false;
-    return true;
-  });
+  // Definisikan Navigasi berdasarkan Use Case Diagram + Penambahan Website Builder
+  const allNavItems = [
+    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, showFor: ["owner", "staff"] },
+    
+    // Khusus Pemilik (Berdasarkan Use Case Kiri)
+    { name: "Daftarkan Kos", href: "/dashboard/houses", icon: Home, showFor: ["owner"] },
+    { name: "Kelola Data Kamar & Harga", href: "/dashboard/rooms", icon: BedDouble, showFor: ["owner"] },
+    { name: "Lihat Laporan Keuangan", href: "/dashboard/financial-report", icon: LineChart, showFor: ["owner"] },
+    { name: "Kelola Akun Staf", href: "/dashboard/staff", icon: UserCog, showFor: ["owner"] },
+    
+    // Khusus Pengelola (Berdasarkan Use Case Tengah)
+    { name: "Kelola Data Kamar & Harga", href: "/dashboard/staff-rooms", icon: BedDouble, showFor: ["staff"] },
+    { name: "Kelola Data Penyewa Aktif", href: "/dashboard/renters-active", icon: Users, showFor: ["staff"] },
+    { name: "Tindak Lanjut Komplain", href: "/dashboard/maintenance", icon: Wrench, showFor: ["staff"] },
+    { name: "Verifikasi Pembayaran", href: "/dashboard/payments", icon: CreditCard, showFor: ["staff"] },
+    { name: "Pengajuan Booking", href: "/dashboard/bookings", icon: CalendarCheck, showFor: ["staff"] }, // Asumsi tambahan untuk proses sewa
+  ];
+
+  // Filter navigasi berdasarkan role
+  const mainNavItems = allNavItems.filter(item => item.showFor.includes(role));
 
   return (
     <aside className="w-64 min-h-screen bg-[#f8f9fa] border-r border-gray-200 flex flex-col hidden md:flex">
@@ -62,8 +67,8 @@ export function Sidebar({ hasBoardingHouse = true, role = "tenant" }: { hasBoard
           );
         })}
 
-        {/* Website Builder Special Button */}
-        {hasBoardingHouse && role !== "staff" && (
+        {/* Website Builder Special Button (Khusus Owner / Nilai Jual SaaS) */}
+        {hasBoardingHouse && role === "owner" && (
           <div className="pt-4 pb-2">
             <Link
               href="/dashboard/website-builder"

@@ -46,8 +46,8 @@ export async function getMaintenanceReports() {
   if (!tenantId) return [];
 
   const { data, error } = await supabase
-    .from("maintenance_reports")
-    .select(`*, rooms(name), renters(full_name)`)
+    .from("maintenance_requests")
+    .select(`*, rooms(name)`)
     .eq("tenant_id", tenantId)
     .order("created_at", { ascending: false });
 
@@ -67,13 +67,15 @@ export async function createMaintenanceReport(formData: FormData) {
   const roomId = formData.get("roomId") as string;
   const description = formData.get("description") as string;
   const priority = formData.get("priority") as string;
+  const title = formData.get("title") as string || "Laporan Baru";
 
-  const { error } = await supabase.from("maintenance_reports").insert({
+  const { error } = await supabase.from("maintenance_requests").insert({
     tenant_id: tenantId,
     room_id: roomId || null,
+    title: title,
+    reported_by: "Staff/Owner",
     description,
-    priority: priority || "medium",
-    status: "open",
+    status: "pending",
   });
 
   if (error) return { error: error.message };
@@ -89,8 +91,8 @@ export async function updateMaintenanceStatus(formData: FormData) {
   const status = formData.get("status") as string;
 
   const { error } = await supabase
-    .from("maintenance_reports")
-    .update({ status, resolved_at: status === "resolved" ? new Date().toISOString() : null })
+    .from("maintenance_requests")
+    .update({ status })
     .eq("id", id);
 
   if (error) return { error: error.message };
