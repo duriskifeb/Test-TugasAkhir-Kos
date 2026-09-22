@@ -5,7 +5,12 @@ import { revalidatePath } from "next/cache";
 export default async function AdminVerifikasiPage() {
   const supabase = await createClient();
 
+  // DEBUGGING: Cek siapa yang sedang login dan RLS nya
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user?.id).single();
+
   // Fetch all boarding houses (tenants table) and their owner details
+  // Kita kembalikan ke client normal karena env variable service key tidak ada
   const { data: boardingHouses, error } = await supabase
     .from("tenants")
     .select(`
@@ -22,10 +27,6 @@ export default async function AdminVerifikasiPage() {
       )
     `)
     .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error("Error fetching boarding houses:", error);
-  }
 
   // Server action to verify or unverify
   async function toggleVerification(formData: FormData) {
@@ -52,6 +53,21 @@ export default async function AdminVerifikasiPage() {
         </div>
       </div>
 
+      {error && (
+        <div className="p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg">
+          Error database: {error.message} 
+          <br/>
+          <span className="text-xs">
+            (Ini berarti akun admin Anda tidak diizinkan membaca tabel tenants karena aturan Row Level Security di database).
+          </span>
+        </div>
+      )}
+
+      {/* Kotak Debugging untuk memastikan Role Admin */}
+      <div className="p-3 bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs rounded mb-4">
+        <strong>Debug Info:</strong> Email: {user?.email || 'Belum Login'} | Role DB: {profile?.role || 'Tidak ditemukan'} | Total Data Terbaca: {boardingHouses?.length || 0}
+      </div>
+
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-gray-600">
@@ -71,7 +87,7 @@ export default async function AdminVerifikasiPage() {
                   <tr key={bh.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 font-medium text-gray-900">
                       <div>{bh.name}</div>
-                      <div className="text-xs text-gray-400 mt-0.5">{bh.subdomain}.domain.com</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{bh.subdomain || 'kosong'}.domain.com</div>
                     </td>
                     <td className="px-6 py-4">{bh.profiles?.full_name || "Unknown"}</td>
                     <td className="px-6 py-4">
