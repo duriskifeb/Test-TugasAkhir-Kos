@@ -4,42 +4,7 @@ import { BedDouble, CheckCircle2, MapPin } from "lucide-react";
 import Head from "next/head";
 import { BookingModal } from "./BookingModal";
 
-export const dynamic = 'force-static';
-export const revalidate = 3600; // Revalidate at most every hour
-
-// Generate static params for SSG
-export async function generateStaticParams() {
-  // Untuk SSG di build time, kita BUKAN menggunakan fungsi server client yang memanggil cookies(),
-  // melainkan harus menggunakan standard Supabase client anonim karena tidak ada sesi pengguna aktif saat build.
-  
-  // Karena generateStaticParams dipanggil pada build-time (bukan request pengguna), 
-  // kita cukup melakukan fetch data dasar secara publik
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseKey) {
-    return [];
-  }
-
-  try {
-    const response = await fetch(`${supabaseUrl}/rest/v1/tenants?select=subdomain&status=eq.VERIFIED`, {
-      headers: {
-        'apikey': supabaseKey,
-        'Authorization': `Bearer ${supabaseKey}`
-      }
-    });
-
-    if (!response.ok) return [];
-
-    const tenants = await response.json();
-    return tenants.map((tenant: { subdomain: string }) => ({
-      subdomain: tenant.subdomain,
-    }));
-  } catch (error) {
-    console.error("Error generating static params:", error);
-    return [];
-  }
-}
+export const dynamic = 'force-dynamic';
 
 // Default content if not configured
 const defaultContent = {

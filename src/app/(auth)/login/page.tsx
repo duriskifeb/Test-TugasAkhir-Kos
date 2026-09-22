@@ -39,8 +39,10 @@ export default function LoginPage() {
         if (profile?.role === "admin") {
           redirectUrl = "/admin/dashboard";
         } else if (profile?.role === "renter") {
-          // Tambahkan pengalihan khusus untuk penyewa jika dia login
           redirectUrl = "/renter/dashboard";
+        } else {
+          // Jika owner atau staff, biarkan ke /dashboard
+          redirectUrl = "/dashboard";
         }
       }
 
