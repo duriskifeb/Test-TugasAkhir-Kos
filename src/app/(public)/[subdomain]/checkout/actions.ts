@@ -42,6 +42,17 @@ export async function processBookingAndRegistration(formData: FormData) {
       if (!authData.user) return { error: "Gagal membuat akun" };
       
       finalUserId = authData.user.id;
+      
+      // PAKSA OVERWRITE ROLE DI TABEL PROFILES MENJADI RENTER
+      // Ini mengatasi bug trigger handle_new_user yang telat membaca meta-data
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ role: 'renter' })
+        .eq('id', finalUserId);
+        
+      if (profileError) {
+        console.error("Gagal menimpa role menjadi renter:", profileError);
+      }
     }
 
     // 2. BUAT REKAMAN BOOKING (Sesuai Skema Database Asli)

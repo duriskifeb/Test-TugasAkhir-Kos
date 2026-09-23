@@ -30,18 +30,27 @@ export default function LoginPage() {
 
       let redirectUrl = "/dashboard";
       if (signInData.user) {
+        // PERBAIKAN: Ambil data profile TANPA menggunakan filter yang bisa diblok RLS 
+        // Menggunakan "as any" untuk sementara mem-bypass masalah Typescript pada auth meta
+        const userMeta = signInData.user.user_metadata as any;
+        const userRoleMeta = userMeta?.role;
+
         const { data: profile } = await supabase
           .from("profiles")
           .select("role")
           .eq("id", signInData.user.id)
           .single();
 
-        if (profile?.role === "admin") {
+        // KITA CEK KEDUANYA (dari meta-data saat register DAN dari tabel profile)
+        const finalRole = profile?.role || userRoleMeta;
+        
+        console.log("DEBUG ROLE:", finalRole);
+
+        if (finalRole === "admin") {
           redirectUrl = "/admin/dashboard";
-        } else if (profile?.role === "renter") {
+        } else if (finalRole === "renter") {
           redirectUrl = "/renter/dashboard";
         } else {
-          // Jika owner atau staff, biarkan ke /dashboard
           redirectUrl = "/dashboard";
         }
       }
