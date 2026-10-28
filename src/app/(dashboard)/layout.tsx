@@ -1,5 +1,5 @@
-import { Sidebar } from "@/components/modules/Sidebar";
-import { Topbar } from "@/components/modules/Topbar";
+import { Sidebar } from "@/components/dashboard/Sidebar";
+import { Topbar } from "@/components/dashboard/Topbar";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { cookies, headers } from "next/headers";

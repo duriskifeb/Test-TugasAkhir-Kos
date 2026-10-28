@@ -13,7 +13,7 @@ import {
   TrendingUp
 } from "lucide-react";
 import { useState } from "react";
-import { OnboardingWizard } from "@/components/modules/OnboardingWizard";
+import { OnboardingWizard } from "@/components/dashboard/OnboardingWizard";
 import Link from "next/link";
 
 export function DashboardClient({ 

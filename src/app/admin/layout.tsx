@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { AdminSidebar } from "@/components/modules/AdminSidebar";
-import { Topbar } from "@/components/modules/Topbar";
+import { AdminSidebar } from "@/components/dashboard/AdminSidebar";
+import { Topbar } from "@/components/dashboard/Topbar";
 
 export default async function AdminLayout({
   children,

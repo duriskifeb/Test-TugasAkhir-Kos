@@ -11,11 +11,12 @@ interface Room {
 
 interface Report {
   id: string;
+  title?: string;
   description: string;
-  priority: string;
+  priority?: string;
   status: string;
   created_at: string;
-  resolved_at: string | null;
+  resolved_at?: string | null;
   rooms?: { name: string } | null;
 }
 
@@ -35,7 +36,7 @@ export function MaintenanceClient({ initialReports, rooms }: { initialReports: R
     }
   };
 
-  const getPriorityBadge = (priority: string) => {
+  const getPriorityBadge = (priority?: string) => {
     switch (priority) {
       case "high":
         return <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-[10px] font-bold uppercase">Prioritas Tinggi</span>;

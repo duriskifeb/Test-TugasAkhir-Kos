@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { use, useState } from "react";
 import { processBookingAndRegistration } from "./actions";
 import { CheckCircle2, BedDouble, User, CreditCard, ShieldCheck } from "lucide-react";
 
-export default function CheckoutPage({ params }: { params: { subdomain: string } }) {
+export default function CheckoutPage({
+  params,
+}: {
+  params: Promise<{ subdomain: string }>;
+}) {
+  const { subdomain } = use(params);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -15,8 +20,6 @@ export default function CheckoutPage({ params }: { params: { subdomain: string }
     setErrorMsg("");
 
     const formData = new FormData(e.currentTarget);
-    // Hardcode tenant_id dan room_id sementara untuk keperluan testing
-    // Di aplikasi nyata, data ini dikirim via URL parameter atau State
     formData.append("tenant_id", "12345678-1234-1234-1234-123456789012"); 
     formData.append("room_id", "12345678-1234-1234-1234-123456789012");
     formData.append("total_price", "1500000");
@@ -66,7 +69,7 @@ export default function CheckoutPage({ params }: { params: { subdomain: string }
         <div className="md:col-span-2">
           <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="p-6 bg-[#3b23c6] text-white">
-              <h2 className="text-xl font-bold">Form Pemesanan & Data Diri</h2>
+              <h2 className="text-xl font-bold">Form Pemesanan & Data Diri ({subdomain})</h2>
               <p className="text-sm text-blue-100 mt-1 opacity-90">
                 Lengkapi form ini. Sistem akan otomatis membuatkan akun penyewa untuk Anda (UC_RegSass).
               </p>

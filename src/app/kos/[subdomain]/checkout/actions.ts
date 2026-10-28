@@ -43,8 +43,7 @@ export async function processBookingAndRegistration(formData: FormData) {
       
       finalUserId = authData.user.id;
       
-      // PAKSA OVERWRITE ROLE DI TABEL PROFILES MENJADI RENTER
-      // Ini mengatasi bug trigger handle_new_user yang telat membaca meta-data
+      // Update role di tabel profiles menjadi renter
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ role: 'renter' })
@@ -55,7 +54,7 @@ export async function processBookingAndRegistration(formData: FormData) {
       }
     }
 
-    // 2. BUAT REKAMAN BOOKING (Sesuai Skema Database Asli)
+    // 2. Buat rekaman booking
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .insert({

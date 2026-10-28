@@ -24,8 +24,8 @@ export function BookingModal({ tenantId, room, buttonClass }: BookingModalProps)
     const pathParts = window.location.pathname.split('/');
     const currentSubdomain = pathParts[2] || pathParts[1]; 
     
-    // Redirect ke halaman checkout yang baru kita buat
-    window.location.href = `/${currentSubdomain}/checkout`;
+    // Redirect ke halaman checkout kos
+    window.location.href = `/kos/${currentSubdomain}/checkout`;
   };
 
   return (

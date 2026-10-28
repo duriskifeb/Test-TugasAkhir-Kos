@@ -8,7 +8,9 @@ export default async function AdminVerificationsPage() {
 
   // DEBUGGING: Cek siapa yang sedang login
   const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user?.id).single();
+  const { data: profile } = user 
+    ? await supabase.from('profiles').select('role').eq('id', user.id).single()
+    : { data: null };
 
   // Ambil SEMUA tenant (menggunakan master service key auth jika RLS bermasalah)
   // Untuk sementara, kita buat query biasa, jika tidak muncul, berarti data memang tidak masuk.

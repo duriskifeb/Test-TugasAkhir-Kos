@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { saveWebsiteSettings } from "./actions";
+import { saveWebsiteSettings } from "@/app/(dashboard)/dashboard/website-builder/actions";
 import { 
   Loader2, Save, LayoutTemplate, Type, Palette, 
   MonitorSmartphone, CheckCircle2, GripVertical, Image as ImageIcon, BedDouble

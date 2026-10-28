@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { BuilderForm } from "./BuilderForm";
+import { BuilderForm } from "@/components/builder/BuilderForm";
 
 export default async function WebsiteBuilderPage() {
   const supabase = await createClient();

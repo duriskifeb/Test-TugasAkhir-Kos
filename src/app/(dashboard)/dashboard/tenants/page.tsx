@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Users, Plus, Trash2 } from "lucide-react";
 import { addTenant, removeTenant } from "./actions";
 import { redirect } from "next/navigation";
-import { SubmitButton } from "@/components/SubmitButton";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 export default async function TenantsPage() {
   const supabase = await createClient();

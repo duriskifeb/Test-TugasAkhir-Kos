@@ -7,7 +7,9 @@ export default async function AdminVerifikasiPage() {
 
   // DEBUGGING: Cek siapa yang sedang login dan RLS nya
   const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user?.id).single();
+  const { data: profile } = user 
+    ? await supabase.from('profiles').select('role').eq('id', user.id).single()
+    : { data: null };
 
   // Fetch all boarding houses (tenants table) and their owner details
   // Kita kembalikan ke client normal karena env variable service key tidak ada

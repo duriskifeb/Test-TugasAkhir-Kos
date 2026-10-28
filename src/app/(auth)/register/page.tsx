@@ -54,7 +54,7 @@ export default function RegisterPage() {
       if (signUpData.user) {
         // Cek apakah dia staff (khusus jika mendaftar dengan email staff yang diundang)
         // Kita abaikan jika dia memilih mendaftar sebagai renter
-        let finalRole = role;
+        let finalRole: "owner" | "renter" | "staff" = role;
         let isStaff = false;
         
         if (role === "owner") {
