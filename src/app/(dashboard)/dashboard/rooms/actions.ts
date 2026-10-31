@@ -5,8 +5,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { Json } from "@/types/database.types";
 
-export async function createRoom(formData: FormData) {
-  const supabase = await createClient();
+type RoomStatus = "available" | "occupied" | "maintenance";
+
+// Validasi form kamar yang dipakai bersama oleh createRoom dan updateRoom.
+function parseRoomForm(formData: FormData) {
   const name = formData.get("name") as string;
   const priceStr = formData.get("price") as string;
   const status = formData.get("status") as string;
@@ -27,6 +29,33 @@ export async function createRoom(formData: FormData) {
   } catch (e) {
     facilities = [];
   }
+
+  // Data tambahan kamar, semuanya opsional.
+  const roomType = ((formData.get("room_type") as string) || "").trim().slice(0, 40) || null;
+  const tenantTypeRaw = (formData.get("tenant_type") as string) || "";
+  const tenantType = ["putra", "putri", "campur"].includes(tenantTypeRaw) ? tenantTypeRaw : null;
+  const size = (key: string) => {
+    const value = parseFloat((formData.get(key) as string) || "");
+    return Number.isFinite(value) && value > 0 && value < 100 ? value : null;
+  };
+
+  return {
+    name,
+    price,
+    status: (status || "available") as RoomStatus,
+    facilities,
+    roomType,
+    tenantType,
+    sizeLength: size("size_length"),
+    sizeWidth: size("size_width"),
+  };
+}
+
+export async function createRoom(formData: FormData) {
+  const supabase = await createClient();
+  const parsed = parseRoomForm(formData);
+  if ("error" in parsed) return { error: parsed.error };
+  const { name, price, status, facilities, roomType, tenantType, sizeLength, sizeWidth } = parsed;
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Unauthorized" };
@@ -70,8 +99,12 @@ export async function createRoom(formData: FormData) {
     boarding_house_id: tenantId,
     name,
     price,
-    status: (status || "available") as "available" | "occupied" | "maintenance",
+    status,
     facilities: facilities as unknown as Json,
+    room_type: roomType,
+    tenant_type: tenantType,
+    size_length: sizeLength,
+    size_width: sizeWidth,
   });
 
   if (error) {
@@ -89,7 +122,11 @@ export async function deleteRoom(formData: FormData) {
 
   if (!id) throw new Error("ID kamar tidak valid.");
 
-  const { error } = await supabase.from("rooms").delete().eq("id", id);
+  // Soft delete: baris kamar tetap ada agar riwayat booking, penghuni, dan tagihan tidak hilang.
+  const { error } = await supabase
+    .from("rooms")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
   
   if (error) {
     console.error("Gagal menghapus kamar:", error);
@@ -98,4 +135,46 @@ export async function deleteRoom(formData: FormData) {
 
   revalidatePath("/dashboard/rooms");
   redirect("/dashboard/rooms");
+}
+
+export async function updateRoom(formData: FormData) {
+  const supabase = await createClient();
+  const id = formData.get("id") as string;
+  if (!id) return { error: "ID kamar tidak valid." };
+
+  const parsed = parseRoomForm(formData);
+  if ("error" in parsed) return { error: parsed.error };
+  const { name, price, status, facilities, roomType, tenantType, sizeLength, sizeWidth } = parsed;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized" };
+
+  // Mengubah nama atau harga kamar tidak mengubah booking, penghuni, dan tagihan yang sudah dibuat:
+  // nilai lama tersimpan sebagai snapshot di tabel transaksi masing-masing.
+  const { data, error } = await supabase
+    .from("rooms")
+    .update({
+      name,
+      price,
+      status,
+      facilities: facilities as unknown as Json,
+      room_type: roomType,
+      tenant_type: tenantType,
+      size_length: sizeLength,
+      size_width: sizeWidth,
+    })
+    .eq("id", id)
+    .is("deleted_at", null)
+    .select("id");
+
+  if (error) {
+    console.error("Gagal mengubah kamar:", error);
+    return { error: "Terjadi kesalahan saat menyimpan data kamar." };
+  }
+  if (!data || data.length === 0) {
+    return { error: "Kamar tidak ditemukan atau Anda tidak memiliki akses." };
+  }
+
+  revalidatePath("/dashboard/rooms");
+  return { success: true };
 }

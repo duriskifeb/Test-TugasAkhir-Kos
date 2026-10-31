@@ -43,7 +43,7 @@ export function SettingsForm({ tenant }: { tenant: any }) {
         {/* Nama Kos */}
         <div className="group">
           <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-            <Home className="w-4 h-4 text-gray-400" />
+            <Home className="w-4 h-4 text-gray-500" />
             Nama Kos / Properti <span className="text-red-500">*</span>
           </label>
           <input
@@ -51,17 +51,17 @@ export function SettingsForm({ tenant }: { tenant: any }) {
             name="name"
             defaultValue={tenant.name}
             required
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:ring-2 focus:ring-[#3b23c6] focus:border-transparent outline-none transition-all"
+            className="field"
           />
         </div>
 
         {/* Subdomain */}
         <div className="group">
           <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-            <Globe className="w-4 h-4 text-gray-400" />
+            <Globe className="w-4 h-4 text-gray-500" />
             Subdomain Website <span className="text-red-500">*</span>
           </label>
-          <div className="flex rounded-xl overflow-hidden border border-gray-200 focus-within:ring-2 focus-within:ring-[#3b23c6] transition-all bg-gray-50 focus-within:bg-white">
+          <div className="flex rounded-xl overflow-hidden border border-gray-200 focus-within:ring-2 focus-within:ring-primary transition-all bg-gray-50 focus-within:bg-white">
             <input
               type="text"
               name="subdomain"
@@ -78,28 +78,28 @@ export function SettingsForm({ tenant }: { tenant: any }) {
         {/* Alamat Lengkap */}
         <div className="group md:col-span-2">
           <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-gray-400" />
+            <MapPin className="w-4 h-4 text-gray-500" />
             Alamat Lengkap
           </label>
           <textarea
             name="address"
             defaultValue={tenant.address || ""}
             rows={2}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:ring-2 focus:ring-[#3b23c6] focus:border-transparent outline-none transition-all resize-none"
+            className="field resize-none"
           />
         </div>
 
         {/* Deskripsi */}
         <div className="group md:col-span-2">
           <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-            <AlignLeft className="w-4 h-4 text-gray-400" />
+            <AlignLeft className="w-4 h-4 text-gray-500" />
             Fasilitas Umum & Deskripsi
           </label>
           <textarea
             name="description"
             defaultValue={tenant.description || ""}
             rows={4}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:ring-2 focus:ring-[#3b23c6] focus:border-transparent outline-none transition-all resize-none"
+            className="field resize-none"
           />
         </div>
       </div>
@@ -108,7 +108,7 @@ export function SettingsForm({ tenant }: { tenant: any }) {
         <button
           type="submit"
           disabled={loading}
-          className="bg-[#3b23c6] text-white rounded-xl px-6 py-3 font-bold text-sm hover:bg-[#2d1b99] transition-all disabled:opacity-50 flex items-center gap-2"
+          className="btn btn-primary"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Simpan Perubahan

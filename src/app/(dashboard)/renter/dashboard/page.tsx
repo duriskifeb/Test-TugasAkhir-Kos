@@ -78,7 +78,7 @@ export default function RenterDashboardPage() {
                 <button 
                   type="submit" 
                   disabled={loading}
-                  className="w-full py-3 bg-gray-900 text-white rounded-xl font-bold flex justify-center items-center gap-2 hover:bg-gray-800 disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="btn btn-primary w-full"
                 >
                   <Upload className="w-5 h-5" />
                   {loading ? "Mengirim..." : "Kirim Bukti Pembayaran"}
@@ -96,7 +96,7 @@ export default function RenterDashboardPage() {
            </div>
            <div className="p-6 flex flex-col items-center justify-center text-center h-48">
               <p className="text-sm text-gray-500 mb-4">Fitur komplain akan terbuka setelah pembayaran Anda diverifikasi oleh Pengelola.</p>
-              <button disabled className="px-6 py-2 bg-gray-100 text-gray-400 font-semibold rounded-lg cursor-not-allowed">
+              <button disabled className="px-6 py-2 bg-gray-100 text-gray-500 font-semibold rounded-lg cursor-not-allowed">
                 Ajukan Komplain
               </button>
            </div>

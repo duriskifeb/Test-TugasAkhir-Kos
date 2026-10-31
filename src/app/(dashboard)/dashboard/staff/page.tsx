@@ -54,7 +54,7 @@ export default async function StaffPage() {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-6 border-b border-gray-100 bg-gray-50/50">
           <h3 className="font-bold text-gray-900 flex items-center gap-2">
-            <Shield className="w-5 h-5 text-gray-400" />
+            <Shield className="w-5 h-5 text-gray-500" />
             Daftar Karyawan Terdaftar
           </h3>
         </div>
@@ -87,7 +87,7 @@ export default async function StaffPage() {
                   <input type="hidden" name="id" value={staff.id} />
                   <button 
                     type="submit"
-                    className="p-2.5 text-gray-400 hover:text-red-600 transition-colors rounded-xl hover:bg-red-50 border border-transparent hover:border-red-100 flex items-center gap-2"
+                    className="p-2.5 text-gray-500 hover:text-red-600 transition-colors rounded-xl hover:bg-red-50 border border-transparent hover:border-red-100 flex items-center gap-2"
                   >
                     <Trash2 className="w-4 h-4" />
                     <span className="text-sm font-semibold hidden sm:inline">Cabut Akses</span>

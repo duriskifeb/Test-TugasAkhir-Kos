@@ -23,6 +23,7 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { PHOTO_ACCEPT } from "@/lib/kos-options";
 
 // Komponen Sortable Item (Blok Drag & Drop)
 function SortableSectionItem({ 
@@ -56,16 +57,16 @@ function SortableSectionItem({
       ref={setNodeRef} 
       style={style} 
       className={`flex items-center justify-between p-3 mb-2 rounded-lg border ${
-        isActive ? 'border-[#3b23c6] bg-indigo-50/50' : 'border-gray-200 bg-white hover:border-gray-300'
+        isActive ? 'border-primary bg-indigo-50/50' : 'border-gray-200 bg-white hover:border-gray-300'
       } cursor-pointer transition-colors shadow-sm`}
       onClick={onClick}
     >
       <div className="flex items-center gap-3">
-        <div {...attributes} {...listeners} className="cursor-grab text-gray-400 hover:text-gray-600">
+        <div {...attributes} {...listeners} className="cursor-grab text-gray-500 hover:text-gray-600">
           <GripVertical className="w-4 h-4" />
         </div>
-        <Icon className={`w-4 h-4 ${isActive ? 'text-[#3b23c6]' : 'text-gray-500'}`} />
-        <span className={`text-sm font-medium ${isActive ? 'text-[#3b23c6]' : 'text-gray-700'}`}>
+        <Icon className={`w-4 h-4 ${isActive ? 'text-primary' : 'text-gray-500'}`} />
+        <span className={`text-sm font-medium ${isActive ? 'text-primary' : 'text-gray-700'}`}>
           {title}
         </span>
       </div>
@@ -75,18 +76,20 @@ function SortableSectionItem({
 
 export function BuilderForm({ 
   tenant, 
-  heroData, 
-  featuresData 
-}: { 
+  heroData,
+  featuresData,
+  galleryData
+}: {
   tenant: any;
   heroData: any;
   featuresData: any;
+  galleryData?: any;
 }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   
-  const theme = tenant.theme || { primaryColor: "#3b23c6", fontFamily: "Inter" };
+  const theme = tenant.theme || { primaryColor: "#2f5bdc", fontFamily: "Inter" };
   const features = featuresData?.items || [];
 
   // State untuk Drag and Drop Layout
@@ -157,7 +160,7 @@ export function BuilderForm({
       <div className="w-full lg:w-1/3 border-r border-gray-200 bg-gray-50 flex flex-col min-w-[320px]">
         <div className="p-5 border-b border-gray-200 bg-white sticky top-0 z-10">
           <h1 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-            <LayoutTemplate className="w-5 h-5 text-[#3b23c6]" />
+            <LayoutTemplate className="w-5 h-5 text-primary" />
             Website Builder
           </h1>
           <p className="text-xs text-gray-500 mt-1">Kustomisasi dinamis (Drag & Drop)</p>
@@ -174,7 +177,7 @@ export function BuilderForm({
           <div className="p-4 mb-2">
             <h2 className="text-xs font-bold text-gray-500 tracking-wider uppercase mb-3">Pengaturan Global</h2>
             <div 
-              className={`p-3 rounded-lg border cursor-pointer transition-colors flex items-center gap-3 ${activeTab === 'theme' ? 'border-[#3b23c6] bg-indigo-50/50 text-[#3b23c6]' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700'}`}
+              className={`p-3 rounded-lg border cursor-pointer transition-colors flex items-center gap-3 ${activeTab === 'theme' ? 'border-primary bg-indigo-50/50 text-primary' : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700'}`}
               onClick={() => setActiveTab('theme')}
             >
               <Palette className="w-4 h-4" />
@@ -211,13 +214,13 @@ export function BuilderForm({
               <div className="space-y-2 opacity-50">
                 {sections.map(section => (
                   <div key={section.id} className="p-3 bg-white border border-gray-200 rounded-xl flex items-center gap-3">
-                    <GripVertical className="w-4 h-4 text-gray-400" />
+                    <GripVertical className="w-4 h-4 text-gray-500" />
                     <span className="text-sm font-medium">{section.title}</span>
                   </div>
                 ))}
               </div>
             )}
-            <p className="text-[11px] text-gray-400 mt-2 italic">*Geser icon titik-titik untuk mengubah urutan blok pada website.</p>
+            <p className="text-[11px] text-gray-500 mt-2 italic">*Geser icon titik-titik untuk mengubah urutan blok pada website.</p>
           </div>
         </div>
 
@@ -227,7 +230,7 @@ export function BuilderForm({
             form="builder-form"
             type="submit"
             disabled={loading}
-            className="w-full bg-[#3b23c6] text-white rounded-lg px-4 py-2.5 font-bold text-sm hover:bg-[#2d1b99] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            className="btn btn-primary w-full"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Simpan & Publikasikan
@@ -250,7 +253,7 @@ export function BuilderForm({
             <div className="space-y-5">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Template Layout</label>
-                <select name="templateStyle" defaultValue={theme.templateStyle || "modern"} className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#3b23c6]">
+                <select name="templateStyle" defaultValue={theme.templateStyle || "modern"} className="field">
                   <option value="modern">Modern (Tepi Melengkung, Bayangan Halus)</option>
                   <option value="minimalist">Minimalis (Garis Tegas, Bersih)</option>
                   <option value="bold">Bold (Kontras Tinggi, Elegan)</option>
@@ -270,7 +273,7 @@ export function BuilderForm({
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Jenis Huruf (Font)</label>
-                <select name="fontFamily" defaultValue={theme.fontFamily} className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#3b23c6]">
+                <select name="fontFamily" defaultValue={theme.fontFamily} className="field">
                   <option value="Inter">Inter (Modern & Bersih)</option>
                   <option value="Plus Jakarta Sans">Plus Jakarta Sans (Elegan)</option>
                   <option value="Merriweather">Merriweather (Klasik Serif)</option>
@@ -283,15 +286,15 @@ export function BuilderForm({
              <div className="space-y-5">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Judul Besar (Headline)</label>
-                <input type="text" name="heroTitle" defaultValue={heroData?.title || ""} placeholder="Kos Eksklusif Ternyaman" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#3b23c6]" required />
+                <input type="text" name="heroTitle" defaultValue={heroData?.title || ""} placeholder="Kos Eksklusif Ternyaman" className="field" required />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Sub-judul (Penjelasan)</label>
-                <textarea name="heroSubtitle" defaultValue={heroData?.subtitle || ""} placeholder="Berada di pusat kota dengan fasilitas lengkap..." rows={4} className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#3b23c6] resize-none" required />
+                <textarea name="heroSubtitle" defaultValue={heroData?.subtitle || ""} placeholder="Berada di pusat kota dengan fasilitas lengkap..." rows={4} className="field resize-none" required />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Teks Tombol Aksi</label>
-                <input type="text" name="heroCtaText" defaultValue={heroData?.ctaText || "Lihat Kamar"} className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#3b23c6]" required />
+                <input type="text" name="heroCtaText" defaultValue={heroData?.ctaText || "Lihat Kamar"} className="field" required />
               </div>
             </div>
           </div>
@@ -300,15 +303,15 @@ export function BuilderForm({
              <div className="space-y-5">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Keunggulan 1</label>
-                <input type="text" name="feature1Text" defaultValue={features[0]?.text || ""} placeholder="Lokasi Strategis" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#3b23c6]" />
+                <input type="text" name="feature1Text" defaultValue={features[0]?.text || ""} placeholder="Lokasi Strategis" className="field" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Keunggulan 2</label>
-                <input type="text" name="feature2Text" defaultValue={features[1]?.text || ""} placeholder="Keamanan 24 Jam" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#3b23c6]" />
+                <input type="text" name="feature2Text" defaultValue={features[1]?.text || ""} placeholder="Keamanan 24 Jam" className="field" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Keunggulan 3</label>
-                <input type="text" name="feature3Text" defaultValue={features[2]?.text || ""} placeholder="Kamar Mandi Dalam" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#3b23c6]" />
+                <input type="text" name="feature3Text" defaultValue={features[2]?.text || ""} placeholder="Kamar Mandi Dalam" className="field" />
               </div>
             </div>
           </div>
@@ -317,11 +320,11 @@ export function BuilderForm({
              <div className="space-y-5">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Judul Bagian Kamar</label>
-                <input type="text" name="roomsTitle" defaultValue={(featuresData as any)?.roomsTitle || "Pilihan Kamar"} placeholder="Kamar yang Tersedia" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#3b23c6]" />
+                <input type="text" name="roomsTitle" defaultValue={(featuresData as any)?.roomsTitle || "Pilihan Kamar"} placeholder="Kamar yang Tersedia" className="field" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Nomor WhatsApp Booking</label>
-                <input type="text" name="whatsappNumber" defaultValue={(featuresData as any)?.whatsappNumber || ""} placeholder="6281234567890 (Gunakan 62)" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#3b23c6]" />
+                <input type="text" name="whatsappNumber" defaultValue={(featuresData as any)?.whatsappNumber || ""} placeholder="6281234567890 (Gunakan 62)" className="field" />
                 <p className="text-xs text-gray-500 mt-1">Nomor ini akan digunakan saat calon penyewa mengklik tombol "Pesan via WhatsApp".</p>
               </div>
               <div className="p-4 bg-indigo-50 text-indigo-700 rounded-xl border border-indigo-100 mt-4">
@@ -336,13 +339,13 @@ export function BuilderForm({
                
                <div className="grid grid-cols-2 gap-4">
                  {[0, 1, 2, 3, 4, 5].map((index) => {
-                   const existingImage = (featuresData as any)?.images?.[index]?.url;
+                   const existingImage = (galleryData as any)?.images?.[index]?.url;
                    return (
                      <div key={`gallery-${index}`} className="relative group aspect-[4/3] rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center overflow-hidden hover:bg-gray-100 transition-colors">
                        <input 
                          type="file" 
                          name={`galleryImage${index}`} 
-                         accept="image/*"
+                         accept={PHOTO_ACCEPT}
                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                        />
                        {existingImage && (
@@ -354,11 +357,11 @@ export function BuilderForm({
                          <img src={existingImage} alt="Gallery item" className="absolute inset-0 w-full h-full object-cover z-10" />
                        ) : (
                          <>
-                           <ImageIcon className="w-6 h-6 text-gray-400 mb-2" />
+                           <ImageIcon className="w-6 h-6 text-gray-500 mb-2" />
                            <span className="text-[10px] font-medium text-gray-500">Pilih Foto</span>
                          </>
                        )}
-                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                       <div className="absolute inset-0 bg-gray-900/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
                          <span className="text-white text-xs font-bold">Ubah Foto</span>
                        </div>
                      </div>
@@ -372,11 +375,11 @@ export function BuilderForm({
 
       {/* Kanan: Live Preview */}
       <div className="hidden lg:flex flex-1 bg-gray-200 p-6 flex-col items-center justify-center relative overflow-hidden">
-        <div className="flex items-center gap-2 mb-3 text-gray-600 text-sm font-medium bg-white/50 px-4 py-1.5 rounded-full backdrop-blur-sm shadow-sm">
+        <div className="flex items-center gap-2 mb-3 text-gray-600 text-sm font-medium bg-white/50 px-4 py-1.5 rounded-full shadow-sm">
           <MonitorSmartphone className="w-4 h-4" />
           Live Preview 
-          <a href={`/kos/${tenant.subdomain}`} target="_blank" className="text-[#3b23c6] hover:underline ml-1">
-            (Buka di tab baru ↗)
+          <a href={`/kos/${tenant.subdomain}`} target="_blank" className="text-primary hover:underline ml-1">
+            (Buka di tab baru)
           </a>
         </div>
         

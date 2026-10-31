@@ -32,7 +32,7 @@ export function StaffForm({ tenants }: { tenants: { id: string; name: string }[]
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-[#ede9fe] text-[#3b23c6] rounded-xl flex items-center justify-center shrink-0">
+        <div className="w-10 h-10 bg-primary-soft text-primary rounded-xl flex items-center justify-center shrink-0">
           <UserPlus className="w-5 h-5" />
         </div>
         <div>
@@ -56,7 +56,7 @@ export function StaffForm({ tenants }: { tenants: { id: string; name: string }[]
               name="name"
               required
               placeholder="Contoh: Budi Santoso"
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:ring-2 focus:ring-[#3b23c6] outline-none transition-all"
+              className="field"
             />
           </div>
           <div>
@@ -66,7 +66,7 @@ export function StaffForm({ tenants }: { tenants: { id: string; name: string }[]
               name="email"
               required
               placeholder="budi@example.com"
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:ring-2 focus:ring-[#3b23c6] outline-none transition-all"
+              className="field"
             />
           </div>
           <div className="md:col-span-2">
@@ -74,7 +74,7 @@ export function StaffForm({ tenants }: { tenants: { id: string; name: string }[]
             <select
               name="tenant_id"
               required
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:ring-2 focus:ring-[#3b23c6] outline-none transition-all"
+              className="field"
             >
               <option value="">-- Pilih Cabang yang Akan Ditugaskan --</option>
               {tenants.map((t) => (
@@ -91,7 +91,7 @@ export function StaffForm({ tenants }: { tenants: { id: string; name: string }[]
           <button
             type="submit"
             disabled={loading}
-            className="bg-[#3b23c6] text-white rounded-xl px-6 py-2.5 font-bold text-sm hover:bg-[#2d1b99] transition-all disabled:opacity-50 flex items-center gap-2"
+            className="btn btn-primary"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
             Kirim Undangan

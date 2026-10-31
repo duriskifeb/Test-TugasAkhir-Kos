@@ -46,7 +46,7 @@ export function formatDate(dateString: string): string {
 
 // --- Slug Generator ---
 // Mengubah string menjadi URL-friendly slug
-// Contoh: toSlug("Grand Pintu Berkah") → "grand-pintu-berkah"
+// Contoh: toSlug("Kos Sejahtera Indah") → "kos-sejahtera-indah"
 export function toSlug(text: string): string {
   return text
     .toLowerCase()

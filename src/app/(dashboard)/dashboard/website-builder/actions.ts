@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { detectImageFormat } from "@/lib/photo";
 
 export async function saveWebsiteSettings(formData: FormData) {
   const supabase = await createClient();
@@ -139,24 +140,39 @@ export async function saveWebsiteSettings(formData: FormData) {
   // 5. Ekstrak data gallery
   const galleryImages = [];
   const MAX_IMAGES = 6;
-  
+  // Hanya JPG, PNG, dan WebP sampai 5 MB. Jenis berkas ditentukan dari isinya, bukan dari nama atau tipe kiriman,
+  // dan nama berkas dibuat sendiri.
+  const IMAGE_TYPE = { jpeg: { ext: "jpg", mime: "image/jpeg" }, png: { ext: "png", mime: "image/png" }, webp: { ext: "webp", mime: "image/webp" } } as const;
+  const rejected: string[] = [];
+
   for (let i = 0; i < MAX_IMAGES; i++) {
     const file = formData.get(`galleryImage${i}`) as File | null;
     const existingUrl = formData.get(`existingGalleryUrl${i}`) as string | null;
-    
+
     if (file && file.size > 0) {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${tenant.id}/${Math.random()}.${fileExt}`;
-      
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('tenant-assets')
-        .upload(fileName, file);
-        
-      if (!uploadError && uploadData) {
-        const { data: { publicUrl } } = supabase.storage
+      const format = file.size <= 5 * 1024 * 1024 ? await detectImageFormat(file) : null;
+      let uploaded = false;
+
+      if (format) {
+        const { ext, mime } = IMAGE_TYPE[format];
+        const fileName = `${tenant.id}/${crypto.randomUUID()}.${ext}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
           .from('tenant-assets')
-          .getPublicUrl(fileName);
-        galleryImages.push({ url: publicUrl });
+          .upload(fileName, file, { contentType: mime });
+
+        if (!uploadError && uploadData) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('tenant-assets')
+            .getPublicUrl(fileName);
+          galleryImages.push({ url: publicUrl });
+          uploaded = true;
+        }
+      }
+
+      if (!uploaded) {
+        // Foto baru ditolak: pertahankan foto lama di slot itu dan beri tahu pemilik.
+        rejected.push(file.name);
+        if (existingUrl) galleryImages.push({ url: existingUrl });
       }
     } else if (existingUrl) {
       galleryImages.push({ url: existingUrl });
@@ -189,5 +205,8 @@ export async function saveWebsiteSettings(formData: FormData) {
   }
 
   revalidatePath("/dashboard/website-builder");
+  if (rejected.length) {
+    return { success: `Perubahan disimpan, tetapi foto ${rejected.join(", ")} tidak diunggah. Gunakan JPG, PNG, atau WebP maksimal 5 MB.` };
+  }
   return { success: "Perubahan website berhasil disimpan!" };
 }

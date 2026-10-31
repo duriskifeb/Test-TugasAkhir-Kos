@@ -1,9 +1,9 @@
-import { Sidebar } from "@/components/dashboard/Sidebar";
+import { MobileNav, Sidebar } from "@/components/dashboard/Sidebar";
 import { Topbar } from "@/components/dashboard/Topbar";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { cookies, headers } from "next/headers";
-import { Home } from "lucide-react";
+import { Lock } from "lucide-react";
 
 export default async function DashboardLayout({
   children,
@@ -97,27 +97,26 @@ export default async function DashboardLayout({
   const hasBoardingHouse = !!boardingHouse || allTenants.length > 0;
 
   return (
-    <div className="flex h-screen bg-white font-sans text-gray-900 overflow-hidden">
+    <div className="flex h-dvh flex-col overflow-hidden bg-gray-50 font-sans text-gray-900 md:flex-row">
       <Sidebar hasBoardingHouse={hasBoardingHouse} role={role} />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Topbar tenants={allTenants} currentTenantId={currentTenantId} />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-[#fafafa]">
+        <MobileNav hasBoardingHouse={hasBoardingHouse} role={role} />
+        <main className="flex-1 overflow-x-hidden overflow-y-auto">
           {/* Tampilkan UI Verifikasi HANYA jika cabang saat ini beneran belum di verifikasi DAN kita tidak sedang di halaman manajemen Houses */}
           {boardingHouse?.status === 'UNVERIFIED' && !isHousesPage ? (
-            <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-              <div className="w-24 h-24 mb-6 text-gray-400">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                </svg>
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Cabang Kos Sedang Diverifikasi</h2>
-              <p className="text-gray-500 max-w-md mb-6">
-                Cabang kos "{boardingHouse?.name}" sedang dalam antrean verifikasi oleh Admin. 
-                Anda tidak dapat mengakses Builder atau data untuk cabang ini sampai diverifikasi.
+            <div className="flex h-full flex-col items-center justify-center p-8 text-center">
+              <span className="tile tile-pending mb-6 flex !aspect-square w-20 items-center justify-center">
+                <Lock className="relative z-10 size-7 text-primary" />
+              </span>
+              <h2 className="mb-2 font-display text-2xl font-bold text-gray-900">Menunggu Konfirmasi Admin</h2>
+              <p className="mb-6 max-w-md text-gray-600">
+                Data kos &quot;{boardingHouse?.name}&quot; sudah tersimpan dan sedang menunggu konfirmasi Admin.
+                Dashboard, Website Builder, dan data kos ini bisa dipakai setelah Admin mengonfirmasi.
               </p>
               {allTenants.length > 1 && (
-                <p className="text-sm text-gray-400">
-                  Gunakan menu dropdown di atas (Topbar) untuk beralih ke cabang kos Anda yang diverifikasi.
+                <p className="text-sm text-gray-500">
+                  Gunakan menu cabang di bagian atas untuk beralih ke cabang kos Anda yang sudah diverifikasi.
                 </p>
               )}
             </div>

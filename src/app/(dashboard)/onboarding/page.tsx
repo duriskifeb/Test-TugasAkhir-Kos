@@ -27,10 +27,10 @@ export default function OnboardingPage() {
     }
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
+        <div className="flex min-h-dvh items-center justify-center bg-gray-50 px-4 py-12">
             <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
                 <div className="text-center mb-8">
-                    <div className="mx-auto w-12 h-12 bg-black text-white rounded-xl flex items-center justify-center mb-4 shadow-sm">
+                    <div className="mx-auto w-12 h-12 bg-primary text-white rounded-xl flex items-center justify-center mb-4 shadow-sm">
                         <Building2 className="w-6 h-6" />
                     </div>
                     <h2 className="text-2xl font-bold text-gray-900">Daftarkan Kos Anda</h2>
@@ -57,13 +57,13 @@ export default function OnboardingPage() {
                         </p>
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                                <Building2 className="h-4 w-4 text-gray-400" />
+                                <Building2 className="h-4 w-4 text-gray-500" />
                             </div>
                             <input
                                 type="text"
                                 name="name"
                                 required
-                                placeholder="Cth: Kos Pintu Berkah Indah"
+                                placeholder="Cth: Kos Sejahtera Indah"
                                 className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-black focus:border-black outline-none transition-all text-sm"
                             />
                         </div>
@@ -79,7 +79,7 @@ export default function OnboardingPage() {
                         </p>
                         <div className="flex shadow-sm rounded-xl overflow-hidden border border-gray-200 focus-within:ring-2 focus-within:ring-black focus-within:border-black transition-all">
                             <div className="pl-3.5 pr-2 py-2.5 bg-gray-50 border-r border-gray-200 flex items-center justify-center">
-                                <Globe className="h-4 w-4 text-gray-400" />
+                                <Globe className="h-4 w-4 text-gray-500" />
                             </div>
                             <input
                                 type="text"
@@ -92,7 +92,7 @@ export default function OnboardingPage() {
                                 .saaskos.com
                             </div>
                         </div>
-                        <p className="text-[11px] text-gray-400 mt-1 flex items-center gap-1">
+                        <p className="text-[11px] text-gray-500 mt-1 flex items-center gap-1">
                             <AlertCircle className="w-3 h-3" /> Hanya gunakan huruf, angka, dan tanda hubung (-)
                         </p>
                     </div>
@@ -101,7 +101,7 @@ export default function OnboardingPage() {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="group w-full flex items-center justify-center gap-2 bg-black hover:bg-gray-800 text-white font-medium py-3 px-4 rounded-xl transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                        className="btn btn-primary w-full"
                     >
                         {isLoading ? "Menyimpan Data..." : "Selesaikan Pendaftaran"}
                         {!isLoading && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}

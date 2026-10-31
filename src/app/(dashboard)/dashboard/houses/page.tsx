@@ -58,7 +58,7 @@ export default function DaftarKosPage() {
     <div className="p-8 max-w-4xl mx-auto">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <Building className="w-6 h-6 text-[#3b23c6]" /> Daftarkan Kos & Cabang Baru
+          <Building className="w-6 h-6 text-primary" /> Daftarkan Kos & Cabang Baru
         </h1>
         <p className="text-gray-500 mt-1">
           Daftarkan properti kos utama Anda. Anda juga bisa mendaftarkan cabang baru di form ini (Extend).
@@ -74,7 +74,7 @@ export default function DaftarKosPage() {
             <strong>(Include Relasi UML):</strong> Harap tunggu karena saat ini sistem sedang memproses antrean agar Admin Super memverifikasi data Anda.
           </p>
           <div className="flex items-center justify-center p-3 bg-white border border-gray-200 rounded-lg animate-pulse gap-3">
-             <div className="w-4 h-4 border-2 border-[#3b23c6] border-t-transparent rounded-full animate-spin"></div>
+             <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
              <span className="text-sm font-medium text-gray-700">Menunggu Verifikasi Admin...</span>
           </div>
         </div>
@@ -107,12 +107,12 @@ export default function DaftarKosPage() {
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Nama Properti / Kos</label>
-              <input type="text" name="name" required placeholder="Contoh: Kos Pintu Berkah Indah" className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3b23c6]" />
+              <input type="text" name="name" required placeholder="Contoh: Kos Sejahtera Indah" className="field" />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Alamat Lengkap</label>
-              <textarea name="address" required rows={3} placeholder="Jalan Raya No 123..." className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3b23c6]"></textarea>
+              <textarea name="address" required rows={3} placeholder="Jalan Raya No 123..." className="field"></textarea>
             </div>
           </div>
 
@@ -130,11 +130,11 @@ export default function DaftarKosPage() {
             <div className="p-4 bg-gray-50 border border-gray-200 border-dashed rounded-xl">
                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Nama Cabang (Kosongkan jika tidak ada)</label>
-                  <input type="text" name="branchName" placeholder="Contoh: Kos Pintu Berkah Cabang Selatan" className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3b23c6]" />
+                  <input type="text" name="branchName" placeholder="Contoh: Kos Sejahtera Cabang Selatan" className="field" />
                </div>
                <div className="mt-3">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Alamat Cabang</label>
-                  <textarea name="branchAddress" rows={2} placeholder="Jalan Mawar No 45..." className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#3b23c6]"></textarea>
+                  <textarea name="branchAddress" rows={2} placeholder="Jalan Mawar No 45..." className="field"></textarea>
                </div>
             </div>
           </div>
@@ -143,7 +143,7 @@ export default function DaftarKosPage() {
             <button 
               type="submit" 
               disabled={loading}
-              className="bg-[#3b23c6] hover:bg-[#2d1b99] text-white px-6 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors disabled:opacity-50"
+              className="btn btn-primary"
             >
               {loading ? (
                  <>Memproses...</>

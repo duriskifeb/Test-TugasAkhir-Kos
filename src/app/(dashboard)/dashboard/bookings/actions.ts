@@ -44,10 +44,7 @@ export async function getBookings() {
   // Fetch bookings WITH room details
   const { data, error } = await supabase
     .from("bookings")
-    .select(`
-      *,
-      rooms ( name, price )
-    `)
+    .select("*")
     .eq("boarding_house_id", tenantId)
     .order("created_at", { ascending: false });
 
@@ -66,89 +63,21 @@ export async function updateBookingStatus(formData: FormData) {
   if (!id || !status) return { error: "Invalid data" };
 
   const supabase = await createClient();
-  
-  // 1. Ambil detail booking yang sedang di-update
-  const { data: bookingData, error: fetchError } = await supabase
-    .from("bookings")
-    .select(`*, rooms(price)`)
-    .eq("id", id)
-    .single();
 
-  if (fetchError || !bookingData) return { error: "Booking tidak ditemukan" };
-
-  // 2. Ubah status di tabel bookings
-  const { error: updateError } = await supabase
-    .from("bookings")
-    .update({ status })
-    .eq("id", id);
-
-  if (updateError) return { error: updateError.message };
-
-  // 3. JIKA APPROVED: Jalankan Otomatisasi 3 Langkah
   if (status === "approved") {
-    
-    // a. Buat data Penghuni Aktif (Renters)
-    const { data: newRenter, error: renterError } = await supabase
-      .from("renters")
-      .insert({
-        tenant_id: bookingData.boarding_house_id, // DIUBAH DARI boarding_house_id
-        room_id: bookingData.room_id,
-        full_name: bookingData.renter_name,
-        phone_number: bookingData.renter_phone,
-        check_in_date: bookingData.planned_check_in, // gunakan rencana check-in sebagai tanggal mulai
-        status: "active"
-      })
-      .select()
-      .single();
-
-    if (renterError) {
-       console.error("Gagal membuat penghuni otomatis:", renterError);
-       // Walau gagal insert penghuni, status booking tetap approved.
-    } else {
-        // b. Ubah status kamar menjadi Terisi (Occupied)
-        await supabase
-          .from("rooms")
-          .update({ status: "occupied" })
-          .eq("id", bookingData.room_id);
-
-        // c. Otomatis buat 1 tagihan sewa bulanan pertama
-        // Hitung tanggal jatuh tempo (contoh: 7 hari setelah rencana check-in)
-        const checkInDate = new Date(bookingData.planned_check_in);
-        const dueDate = new Date(checkInDate);
-        dueDate.setDate(dueDate.getDate() + 7);
-        
-        // Ambil harga kamar dari database lagi secara eksplisit untuk mencegah undefined
-        const { data: roomData } = await supabase
-            .from("rooms")
-            .select("price")
-            .eq("id", bookingData.room_id)
-            .single();
-
-        const roomPrice = roomData?.price || 0;
-
-        if (newRenter) {
-            const newPayment: any = {
-                tenant_id: bookingData.boarding_house_id,
-                renter_id: newRenter.id,
-                amount: roomPrice,
-                due_date: dueDate.toISOString().split('T')[0],
-                status: "unpaid" // Menggunakan unpaid karena pending tidak diizinkan oleh schema database Anda
-            };
-            const { error: paymentError } = await supabase
-              .from("payments")
-              .insert(newPayment);
-
-            if (paymentError) {
-                console.error("Gagal membuat tagihan pembayaran:", paymentError);
-            }
-        }
-    }
+    // Satu transaksi database: status booking, penghuni baru, status kamar, dan tagihan pertama.
+    // Snapshot nama kamar dan harga disalin oleh database (lihat migration 20261031000000).
+    const { error } = await supabase.rpc("approve_booking", { p_booking_id: id });
+    if (error) return { error: error.message };
+  } else {
+    const { error } = await supabase.from("bookings").update({ status }).eq("id", id);
+    if (error) return { error: error.message };
   }
 
   revalidatePath("/dashboard/bookings");
   revalidatePath("/dashboard/rooms");
   revalidatePath("/dashboard/tenants");
   revalidatePath("/dashboard/payments");
-  
+
   return { success: true };
 }

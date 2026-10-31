@@ -11,13 +11,28 @@ export async function processBookingAndRegistration(formData: FormData) {
   const phone = formData.get("phone") as string;
   const startDate = formData.get("start_date") as string;
   
-  // Ambil ID dari database, BUKAN dari hardcode form (Bypass RLS error FK violation)
-  const { data: firstTenant } = await supabase.from('tenants').select('id').limit(1).single();
-  const { data: firstRoom } = await supabase.from('rooms').select('id').limit(1).single();
+  // Kos dan kamar ditentukan dari pilihan penyewa (subdomain + id kamar), lalu diverifikasi di database.
+  // Harga dan nama tidak diambil dari form: snapshot disalin oleh database saat booking dibuat.
+  const subdomain = formData.get("subdomain") as string;
+  const roomId = formData.get("room_id") as string;
 
-  if (!firstTenant || !firstRoom) {
-     return { error: "Data kos atau kamar tidak ditemukan di database. Pastikan kos dan kamar sudah dibuat terlebih dahulu oleh Pemilik." };
-  }
+  const { data: tenant } = await supabase
+    .from('tenants')
+    .select('id')
+    .eq('subdomain', subdomain)
+    .eq('status', 'VERIFIED')
+    .maybeSingle();
+  if (!tenant) return { error: "Kos tidak ditemukan." };
+
+  const { data: room } = await supabase
+    .from('rooms')
+    .select('id')
+    .eq('id', roomId)
+    .eq('boarding_house_id', tenant.id)
+    .eq('status', 'available')
+    .is('deleted_at', null)
+    .maybeSingle();
+  if (!room) return { error: "Kamar yang dipilih sudah tidak tersedia." };
 
   try {
     // 1. Cek apakah user sudah login atau belum punya akun
@@ -58,8 +73,8 @@ export async function processBookingAndRegistration(formData: FormData) {
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .insert({
-        boarding_house_id: firstTenant.id,
-        room_id: firstRoom.id,
+        boarding_house_id: tenant.id,
+        room_id: room.id,
         renter_name: fullName,
         renter_phone: phone,
         renter_email: email,

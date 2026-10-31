@@ -18,7 +18,7 @@ export default function StaffRoomsPage() {
         const { data, error } = await supabase.from("rooms").select(`
           id, name, price, status,
           tenants (name)
-        `).order("created_at", { ascending: false });
+        `).is("deleted_at", null).order("created_at", { ascending: false });
 
         if (data) setRooms(data);
       } catch (err) {

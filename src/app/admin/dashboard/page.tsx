@@ -128,13 +128,13 @@ export default async function AdminDashboardOverview() {
                 >
                   <div className="w-full bg-gray-100 rounded-t-sm flex items-end justify-center relative group">
                     <div
-                      className="w-full bg-black rounded-t-sm transition-all duration-500 hover:bg-gray-800"
+                      className="w-full bg-primary rounded-t-sm transition-all duration-500 hover:bg-primary-hover"
                       style={{
                         height: `${Math.max(item.value > 0 ? (item.value / growthData[growthData.length - 1].value) * 100 : 5, 5)}%`,
                         minHeight: "20px",
                       }}
                     >
-                      <span className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 bg-gray-900 text-white text-xs py-1 px-2 rounded transition-opacity shadow-lg">
+                      <span className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 bg-primary text-white text-xs py-1 px-2 rounded transition-opacity shadow-lg">
                         {item.value} Kos
                       </span>
                     </div>
@@ -157,7 +157,7 @@ export default async function AdminDashboardOverview() {
               </h2>
               <Link
                 href="/admin/verifikasi"
-                className="text-sm text-black font-medium hover:underline"
+                className="text-sm text-gray-900 font-medium hover:underline"
               >
                 Lihat Semua &rarr;
               </Link>
@@ -179,7 +179,7 @@ export default async function AdminDashboardOverview() {
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-gray-500">
                           {new Date(tenant.created_at).toLocaleDateString(
                             "id-ID",
                             { day: "numeric", month: "short" },

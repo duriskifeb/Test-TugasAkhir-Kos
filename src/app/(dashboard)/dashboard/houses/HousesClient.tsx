@@ -46,7 +46,7 @@ export function HousesClient({
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[#3b23c6] text-white rounded-lg font-medium hover:bg-[#321ca8] transition-colors"
+          className="btn btn-primary"
         >
           <Plus className="w-4 h-4" />
           Tambah Cabang
@@ -56,7 +56,7 @@ export function HousesClient({
       {tenants && tenants.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {tenants.map((tenant) => (
-            <div key={tenant.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col relative overflow-hidden group hover:border-[#3b23c6]/30 transition-all">
+            <div key={tenant.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col relative overflow-hidden group hover:border-primary/30 transition-all">
               {tenant.status === 'UNVERIFIED' && (
                 <div className="absolute top-0 right-0 bg-amber-100 text-amber-700 text-[10px] font-bold px-3 py-1 rounded-bl-lg flex items-center gap-1">
                   <Clock className="w-3 h-3" /> MENUNGGU VERIFIKASI
@@ -68,7 +68,7 @@ export function HousesClient({
                 </div>
               )}
               
-              <div className="w-12 h-12 bg-indigo-50 rounded-lg flex items-center justify-center mb-4 text-[#3b23c6]">
+              <div className="w-12 h-12 bg-indigo-50 rounded-lg flex items-center justify-center mb-4 text-primary">
                 <Building className="w-6 h-6" />
               </div>
               
@@ -79,14 +79,14 @@ export function HousesClient({
               </div>
               
               <div className="mt-auto pt-4 border-t border-gray-100 flex justify-between items-center">
-                <span className="text-xs text-gray-400">Terdaftar: {new Date(tenant.created_at).toLocaleDateString('id-ID')}</span>
+                <span className="text-xs text-gray-500">Terdaftar: {new Date(tenant.created_at).toLocaleDateString('id-ID')}</span>
                 <button 
                   onClick={() => {
                     document.cookie = `active_tenant_id=${tenant.id}; path=/`;
                     router.push('/dashboard');
                     router.refresh();
                   }}
-                  className="text-sm font-medium text-[#3b23c6] hover:text-[#2a1796]"
+                  className="text-sm font-medium text-primary hover:text-primary-hover"
                 >
                   Kelola Cabang &rarr;
                 </button>
@@ -108,13 +108,13 @@ export function HousesClient({
 
       {/* Modal Add Branch */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
+        <div className="fixed inset-0 bg-gray-900/30 z-50 flex items-center justify-center p-4 animate-in fade-in">
           <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-xl animate-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
               <h3 className="text-lg font-bold text-gray-900">Daftarkan Cabang Baru</h3>
               <button 
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-500 hover:text-gray-600"
               >
                 &times;
               </button>
@@ -128,7 +128,7 @@ export function HousesClient({
                   required
                   value={formData.name}
                   onChange={e => setFormData({...formData, name: e.target.value})}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#3b23c6] focus:border-transparent outline-none"
+                  className="field"
                   placeholder="Contoh: Kos Sejahtera Cab. Melati"
                 />
               </div>
@@ -140,7 +140,7 @@ export function HousesClient({
                     required
                     value={formData.subdomain}
                     onChange={e => setFormData({...formData, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')})}
-                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-l-lg focus:ring-2 focus:ring-[#3b23c6] focus:border-transparent outline-none"
+                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-l-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
                     placeholder="kos-melati"
                   />
                   <div className="px-4 py-2 bg-gray-100 border border-l-0 border-gray-200 rounded-r-lg text-gray-500 font-medium">
@@ -161,7 +161,7 @@ export function HousesClient({
                 <button 
                   type="submit"
                   disabled={isLoading}
-                  className="flex-1 px-4 py-2 bg-[#3b23c6] text-white rounded-lg font-medium hover:bg-[#2a1796] disabled:opacity-50"
+                  className="btn btn-primary flex-1"
                 >
                   {isLoading ? 'Menyimpan...' : 'Daftarkan Cabang'}
                 </button>

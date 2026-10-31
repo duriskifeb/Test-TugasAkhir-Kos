@@ -42,11 +42,12 @@ export default async function WebsiteBuilderPage() {
 
   const heroData = sections?.find((s) => s.section_type === "hero")?.content;
   const featuresData = sections?.find((s) => s.section_type === "features")?.content;
+  const galleryData = sections?.find((s) => s.section_type === "gallery")?.content;
 
   return (
     // Container dibuat p-0 agar panel builder bisa mengambil full lebar dan tinggi sisa
     <div className="w-full h-full bg-white">
-      <BuilderForm tenant={tenant} heroData={heroData} featuresData={featuresData} />
+      <BuilderForm tenant={tenant} heroData={heroData} featuresData={featuresData} galleryData={galleryData} />
     </div>
   );
 }

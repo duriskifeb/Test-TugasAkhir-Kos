@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Banknote, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { Banknote, CheckCircle, Clock, AlertCircle, Info } from "lucide-react";
 import { verifyPayment } from "./actions";
 
 export default function PaymentsClient({ initialPayments, renters, tenantId }: { initialPayments: any[], renters: any[], tenantId: string }) {
@@ -48,7 +48,7 @@ export default function PaymentsClient({ initialPayments, renters, tenantId }: {
         </div>
         <a
           href="/dashboard/bookings"
-          className="flex items-center gap-2 px-4 py-2 bg-[#3b23c6] text-white rounded-lg font-medium hover:bg-[#321ca8] transition-colors text-sm"
+          className="btn btn-primary"
         >
           Tinjau Booking
         </a>
@@ -56,7 +56,7 @@ export default function PaymentsClient({ initialPayments, renters, tenantId }: {
 
       {/* Info Banner: Alur Tagihan */}
       <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex items-start gap-3">
-        <span className="text-indigo-500 text-xl mt-0.5">ℹ️</span>
+        <Info className="mt-0.5 size-5 shrink-0 text-primary" />
         <div className="text-sm text-indigo-800">
           <strong>Alur Tagihan Otomatis:</strong> Tagihan sewa akan otomatis terbuat saat Anda menyetujui (Approve) pengajuan booking dari calon penyewa. Anda hanya perlu memverifikasi status lunas setelah penyewa melakukan pembayaran.
         </div>
@@ -94,7 +94,7 @@ export default function PaymentsClient({ initialPayments, renters, tenantId }: {
           <p className="text-gray-500 max-w-md">
             Tagihan akan muncul otomatis setelah pengajuan booking dari calon penyewa disetujui. Tinjau pengajuan booking terlebih dahulu.
           </p>
-          <a href="/dashboard/bookings" className="mt-4 px-5 py-2.5 bg-[#3b23c6] text-white text-sm font-bold rounded-lg hover:bg-[#321ca8] transition-colors">
+          <a href="/dashboard/bookings" className="btn btn-primary mt-4">
             Tinjau Booking
           </a>
         </div>
@@ -117,8 +117,8 @@ export default function PaymentsClient({ initialPayments, renters, tenantId }: {
                     {new Date(p.due_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                   </td>
                   <td className="p-4">
-                    <div className="font-bold text-gray-900">{p.renters?.full_name || "Tidak Diketahui"}</div>
-                    <div className="text-xs text-gray-500">{p.renters?.rooms?.name || "Kamar ?"}</div>
+                    <div className="font-bold text-gray-900">{p.renter_name_snapshot}</div>
+                    <div className="text-xs text-gray-500">{p.room_name_snapshot || "Tanpa kamar"}</div>
                   </td>
                   <td className="p-4 font-bold text-gray-900">
                     {formatCurrency(p.amount)}
@@ -126,7 +126,7 @@ export default function PaymentsClient({ initialPayments, renters, tenantId }: {
                   <td className="p-4">
                     {getStatusBadge(p.status, p.due_date)}
                     {p.status === 'paid' && p.paid_at && (
-                      <div className="text-[10px] text-gray-400 mt-1">
+                      <div className="text-[10px] text-gray-500 mt-1">
                         Tgl bayar: {new Date(p.paid_at).toLocaleDateString('id-ID')}
                       </div>
                     )}
@@ -140,7 +140,7 @@ export default function PaymentsClient({ initialPayments, renters, tenantId }: {
                         Verifikasi Lunas
                       </button>
                     ) : (
-                      <span className="text-xs text-gray-400 font-medium">Selesai</span>
+                      <span className="text-xs text-gray-500 font-medium">Selesai</span>
                     )}
                   </td>
                 </tr>

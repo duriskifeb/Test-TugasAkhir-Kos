@@ -27,11 +27,11 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="flex h-screen bg-white font-sans text-gray-900 overflow-hidden">
+    <div className="flex h-dvh flex-col overflow-hidden bg-gray-50 font-sans text-gray-900 md:flex-row">
       <AdminSidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Topbar isAdmin={true} />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-[#fafafa]">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto">
           {children}
         </main>
       </div>

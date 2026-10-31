@@ -47,7 +47,7 @@ export async function getMaintenanceReports() {
 
   const { data, error } = await supabase
     .from("maintenance_requests")
-    .select(`*, rooms(name)`)
+    .select("*")
     .eq("tenant_id", tenantId)
     .order("created_at", { ascending: false });
 

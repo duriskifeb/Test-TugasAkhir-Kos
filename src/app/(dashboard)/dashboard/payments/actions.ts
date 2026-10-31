@@ -51,13 +51,7 @@ export async function getPaymentsData() {
   // Fetch payments dan relasi ke renter & room
   const { data: payments, error: payError } = await supabase
     .from("payments")
-    .select(`
-      *,
-      renters ( 
-        full_name, 
-        rooms ( name ) 
-      )
-    `)
+    .select("*")
     .eq("tenant_id", tenantId)
     .order("created_at", { ascending: false });
 

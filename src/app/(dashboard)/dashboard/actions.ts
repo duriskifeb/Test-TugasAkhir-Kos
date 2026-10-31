@@ -1,44 +1,36 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { revalidatePath } from "next/cache";
+import type { KosPayload } from "@/lib/kos-options";
+import type { Json } from "@/types/database.types";
 
-export async function setupBoardingHouse(formData: FormData) {
-    const supabase = await createClient();
-    const name = formData.get("name") as string;
-    const address = formData.get("address") as string;
-    const description = formData.get("description") as string;
-    const subdomainInput = formData.get("subdomain") as string;
+/**
+ * Mendaftarkan kos pertama pemilik: kos, kamar, dan bagian halaman publik dibuat oleh satu fungsi
+ * database (setup_boarding_house) dalam satu transaksi. Validasi utama ada di fungsi itu.
+ */
+export async function setupBoardingHouse(payload: KosPayload): Promise<{ error?: string; success?: true }> {
+  const supabase = await createClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-        throw new Error("Unauthorized");
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sesi Anda berakhir. Silakan masuk lagi." };
+
+  const { error } = await supabase.rpc("setup_boarding_house", { p_data: payload as unknown as Json });
+
+  if (error) {
+    console.error("Gagal mendaftarkan kos:", error);
+    // Pesan dari fungsi database sudah berbahasa Indonesia dan aman ditampilkan.
+    // Kode 22023 (data tidak valid), 23505 (link sudah dipakai), dan 28000 (belum masuk) berasal dari fungsi itu.
+    if (["22023", "23505", "28000"].includes(error.code)) return { error: error.message };
+    if (error.code === "PGRST202") {
+      return { error: "Pendaftaran kos belum siap: migrasi database terbaru (setup_boarding_house) belum dijalankan." };
     }
+    return { error: "Gagal menyimpan data kos. Silakan coba lagi." };
+  }
 
-    const formattedSubdomain = subdomainInput ? subdomainInput.toLowerCase().replace(/\s+/g, '-') : name.toLowerCase().replace(/\s+/g, '-');
-
-    // Cek apakah subdomain sudah terpakai
-    const { data: existing } = await supabase.from("tenants").select("id").eq("subdomain", formattedSubdomain).single();
-    if (existing) {
-        throw new Error("Subdomain ini sudah digunakan, silakan pilih yang lain.");
-    }
-
-    // Insert ke tabel tenants dengan status UNVERIFIED
-    const { error } = await supabase.from("tenants").insert({
-        owner_id: user.id,
-        name: name,
-        address: address,
-        description: description,
-        subdomain: formattedSubdomain,
-        status: "UNVERIFIED",
-    });
-
-    if (error) {
-        console.error("Gagal membuat kos:", error);
-        throw new Error(error.message || "Gagal menyimpan data kos.");
-    }
-
-    // Refresh halaman agar mendapatkan data terbaru
-    revalidatePath("/dashboard");
-    revalidatePath("/dashboard", "layout");
+  // Sengaja tanpa revalidatePath: itu membuat Next langsung memuat ulang halaman, lalu layout mengganti isinya dengan
+  // layar "menunggu konfirmasi admin" dan popup "berhasil disimpan" ikut hilang. Wizard memuat ulang sendiri
+  // (router.refresh) setelah pemilik menutup popup.
+  return { success: true };
 }

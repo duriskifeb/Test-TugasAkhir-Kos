@@ -16,6 +16,9 @@ export type Database = {
     Tables: {
       bookings: {
         Row: {
+          room_name_snapshot: string
+          room_price_snapshot: number
+          boarding_house_name_snapshot: string
           id: string
           boarding_house_id: string
           room_id: string
@@ -29,6 +32,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          room_name_snapshot?: string
+          room_price_snapshot?: number
+          boarding_house_name_snapshot?: string
           id?: string
           boarding_house_id: string
           room_id: string
@@ -42,6 +48,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          room_name_snapshot?: string
+          room_price_snapshot?: number
+          boarding_house_name_snapshot?: string
           id?: string
           boarding_house_id?: string
           room_id?: string
@@ -73,6 +82,7 @@ export type Database = {
       }
       maintenance_requests: {
         Row: {
+          room_name_snapshot: string | null
           created_at: string
           description: string
           id: string
@@ -83,6 +93,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          room_name_snapshot?: string | null
           created_at?: string
           description: string
           id?: string
@@ -94,6 +105,7 @@ export type Database = {
           title: string
         }
         Update: {
+          room_name_snapshot?: string | null
           created_at?: string
           description?: string
           id?: string
@@ -158,6 +170,8 @@ export type Database = {
       }
       payments: {
         Row: {
+          renter_name_snapshot: string
+          room_name_snapshot: string | null
           amount: number
           created_at: string
           due_date: string
@@ -168,6 +182,8 @@ export type Database = {
           tenant_id: string
         }
         Insert: {
+          renter_name_snapshot?: string
+          room_name_snapshot?: string | null
           amount: number
           created_at?: string
           due_date: string
@@ -179,6 +195,8 @@ export type Database = {
           boarding_house_id?: string
         }
         Update: {
+          renter_name_snapshot?: string
+          room_name_snapshot?: string | null
           amount?: number
           created_at?: string
           due_date?: string
@@ -241,6 +259,8 @@ export type Database = {
       }
       renters: {
         Row: {
+          room_name_snapshot: string | null
+          monthly_rent_snapshot: number | null
           check_in_date: string
           created_at: string
           full_name: string
@@ -251,6 +271,8 @@ export type Database = {
           tenant_id: string
         }
         Insert: {
+          room_name_snapshot?: string | null
+          monthly_rent_snapshot?: number | null
           check_in_date: string
           created_at?: string
           full_name: string
@@ -262,6 +284,8 @@ export type Database = {
           boarding_house_id?: string
         }
         Update: {
+          room_name_snapshot?: string | null
+          monthly_rent_snapshot?: number | null
           check_in_date?: string
           created_at?: string
           full_name?: string
@@ -291,27 +315,42 @@ export type Database = {
       }
       rooms: {
         Row: {
+          deleted_at: string | null
           boarding_house_id: string
           created_at: string
           facilities: Json | null
+          room_type: string | null
+          tenant_type: string | null
+          size_length: number | null
+          size_width: number | null
           id: string
           name: string
           price: number
           status: Database["public"]["Enums"]["room_status"]
         }
         Insert: {
+          deleted_at?: string | null
           boarding_house_id: string
           created_at?: string
           facilities?: Json | null
+          room_type?: string | null
+          tenant_type?: string | null
+          size_length?: number | null
+          size_width?: number | null
           id?: string
           name: string
           price: number
           status?: Database["public"]["Enums"]["room_status"]
         }
         Update: {
+          deleted_at?: string | null
           boarding_house_id?: string
           created_at?: string
           facilities?: Json | null
+          room_type?: string | null
+          tenant_type?: string | null
+          size_length?: number | null
+          size_width?: number | null
           id?: string
           name?: string
           price?: number
@@ -367,6 +406,11 @@ export type Database = {
       tenants: {
         Row: {
           address: string | null
+          landmark: string | null
+          latitude: number | null
+          longitude: number | null
+          facilities: Json | null
+          rules: Json | null
           created_at: string
           description: string | null
           id: string
@@ -380,6 +424,11 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          landmark?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          facilities?: Json | null
+          rules?: Json | null
           created_at?: string
           description?: string | null
           id?: string
@@ -393,6 +442,11 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          landmark?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          facilities?: Json | null
+          rules?: Json | null
           created_at?: string
           description?: string | null
           id?: string
@@ -420,6 +474,9 @@ export type Database = {
     }
     Functions: {
       is_admin: { Args: never; Returns: boolean }
+      approve_booking: { Args: { p_booking_id: string }; Returns: string }
+      is_staff_invited: { Args: { p_email: string }; Returns: boolean }
+      setup_boarding_house: { Args: { p_data: Json }; Returns: string }
     }
     Enums: {
       room_status: "available" | "occupied" | "maintenance"

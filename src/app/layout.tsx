@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,25 +12,30 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-bricolage",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
   title: {
-    default: "Pintu Berkah — Manajemen Kos Modern",
-    template: "%s | Pintu Berkah",
+    default: "Build Kos | Manajemen Kos Modern",
+    template: "%s | Build Kos",
   },
   description:
     "Platform manajemen kos-kosan all-in-one. Kelola kamar, penyewa, pembayaran, dan bangun website booking properti Anda dengan mudah.",
   keywords: ["kos", "kosan", "manajemen properti", "booking kamar", "indekos"],
-  authors: [{ name: "Pintu Berkah" }],
-  creator: "Pintu Berkah",
+  authors: [{ name: "Build Kos" }],
+  creator: "Build Kos",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="id"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body suppressHydrationWarning className="min-h-full flex flex-col">{children}</body>
     </html>
   );
 }

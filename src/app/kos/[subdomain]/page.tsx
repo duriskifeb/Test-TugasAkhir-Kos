@@ -1,10 +1,19 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
-import { BedDouble, CheckCircle2, MapPin } from "lucide-react";
-import Head from "next/head";
+import Link from "next/link";
+import { BedDouble, MapPin } from "lucide-react";
 import { BookingModal } from "./BookingModal";
+import {
+  facilityGroups,
+  formatSize,
+  parseFacilities,
+  parseRules,
+  rulesToLines,
+  tenantTypeLabel,
+  type TenantType,
+} from "@/lib/kos-options";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 // Default content if not configured
 const defaultContent = {
@@ -19,9 +28,29 @@ const defaultContent = {
       { icon: "CheckCircle2", text: "Lokasi Strategis" },
       { icon: "CheckCircle2", text: "Keamanan 24 Jam" },
       { icon: "CheckCircle2", text: "Kebersihan Terjamin" },
-    ]
-  }
+    ],
+  },
 };
+
+const fontStacks: Record<string, string> = {
+  Inter: "var(--font-tenant-inter), ui-sans-serif, system-ui, sans-serif",
+  "Plus Jakarta Sans": "var(--font-tenant-jakarta), ui-sans-serif, system-ui, sans-serif",
+  Merriweather: "var(--font-tenant-merriweather), Georgia, serif",
+};
+
+const DEFAULT_PRIMARY = "#2f5bdc";
+
+// Pilih teks putih atau tua mana yang kontrasnya lebih tinggi terhadap warna pilihan pemilik.
+function onColor(hex: string) {
+  const n = parseInt(hex.slice(1), 16);
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  const L = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const inkL = 0.019;
+  return 1.05 / (L + 0.05) >= (L + 0.05) / (inkL + 0.05) ? "#ffffff" : "#1c2541";
+}
 
 export default async function PublicTenantPage(props: {
   params: Promise<{ subdomain: string }>;
@@ -41,14 +70,27 @@ export default async function PublicTenantPage(props: {
   }
 
   // Jika tidak ditemukan atau belum diverifikasi, tampilkan 404
-  if (!tenant || tenant.status !== 'VERIFIED') {
+  if (!tenant || tenant.status !== "VERIFIED") {
     notFound();
   }
 
   // 2. Ambil tema
-  const theme: { primaryColor: string; fontFamily: string } =
-    (tenant.theme as { primaryColor: string; fontFamily: string } | null) ??
-    { primaryColor: "#3b23c6", fontFamily: "Inter" };
+  const theme: { primaryColor: string; fontFamily: string; templateStyle?: string } =
+    (tenant.theme as { primaryColor: string; fontFamily: string; templateStyle?: string } | null) ?? {
+      primaryColor: DEFAULT_PRIMARY,
+      fontFamily: "Inter",
+    };
+
+  // Nilai warna dari database divalidasi sebelum masuk ke style, bukan disisipkan sebagai CSS mentah.
+  const primary = /^#[0-9a-f]{6}$/i.test(theme.primaryColor ?? "") ? theme.primaryColor : DEFAULT_PRIMARY;
+  const themeVars = {
+    fontFamily: fontStacks[theme.fontFamily] ?? fontStacks.Inter,
+    "--color-primary": primary,
+    "--color-primary-hover": `color-mix(in srgb, ${primary} 86%, #000)`,
+    "--color-primary-soft": `color-mix(in srgb, ${primary} 9%, #fff)`,
+    "--color-primary-tint": `color-mix(in srgb, ${primary} 22%, #fff)`,
+    "--color-on-primary": onColor(primary),
+  } as React.CSSProperties;
 
   // 3. Ambil seksi halaman (page sections)
   const { data: sections } = await supabase
@@ -58,9 +100,19 @@ export default async function PublicTenantPage(props: {
     .order("order_index", { ascending: true });
 
   // Parsing seksi fallback
-  const heroSection = sections?.find((s) => s.section_type === "hero")?.content as any ?? defaultContent.hero;
-  const featuresSection = sections?.find((s) => s.section_type === "features")?.content as any ?? defaultContent.features;
-  const gallerySection = sections?.find((s) => s.section_type === "gallery")?.content as any ?? { title: "Galeri Foto", images: [] };
+  const heroSection = (sections?.find((s) => s.section_type === "hero")?.content as any) ?? defaultContent.hero;
+  const featuresSection =
+    (sections?.find((s) => s.section_type === "features")?.content as any) ?? defaultContent.features;
+  const gallerySection =
+    (sections?.find((s) => s.section_type === "gallery")?.content as any) ?? { title: "Galeri Foto", images: [] };
+
+  // Informasi kos dari pendaftaran (lokasi, fasilitas, peraturan). JSON dari database dibaca lewat penyaring.
+  const facilities = parseFacilities(tenant.facilities);
+  const facilityList = facilityGroups.map((g) => ({ title: g.title, items: facilities[g.id] ?? [] })).filter((g) => g.items.length > 0);
+  const rules = parseRules(tenant.rules);
+  const ruleLines = rules ? rulesToLines(rules) : [];
+  const hasCoords = typeof tenant.latitude === "number" && typeof tenant.longitude === "number";
+  const hasInfo = !!tenant.landmark || hasCoords || facilityList.length > 0 || ruleLines.length > 0;
 
   // 4. Ambil data kamar aktif
   const { data: rooms } = await supabase
@@ -68,6 +120,7 @@ export default async function PublicTenantPage(props: {
     .select("*")
     .eq("boarding_house_id", tenant.id)
     .eq("status", "available")
+    .is("deleted_at", null)
     .order("price", { ascending: true });
 
   const formatRupiah = (number: number) => {
@@ -79,72 +132,62 @@ export default async function PublicTenantPage(props: {
   };
 
   // 5. Tentukan Urutan Render Layout Berdasarkan Database
-  const sectionTypesToRender = sections && sections.length > 0 
-    ? sections.map(s => s.section_type) 
-    : ["hero", "features", "rooms", "gallery"];
+  const sectionTypesToRender =
+    sections && sections.length > 0 ? sections.map((s) => s.section_type) : ["hero", "features", "rooms", "gallery"];
 
   // Menyiapkan pesan WhatsApp dasar
   const waNumber = featuresSection.whatsappNumber || "";
-  const generateWaLink = (roomName: string) => {
-    if (!waNumber) return "#";
-    const cleanNumber = waNumber.replace(/\D/g, '');
-    const message = encodeURIComponent(`Halo, saya tertarik dengan kamar: ${roomName} yang ada di kos ${tenant.name}. Apakah masih tersedia?`);
-    return `https://wa.me/${cleanNumber}?text=${message}`;
-  };
-
   const generateComplaintLink = () => {
     if (!waNumber) return "#";
-    const cleanNumber = waNumber.replace(/\D/g, '');
-    const message = encodeURIComponent(`Halo Admin ${tenant.name}, saya penghuni kos ingin mengajukan laporan keluhan/kerusakan fasilitas. [Jelaskan keluhan di sini]`);
+    const cleanNumber = waNumber.replace(/\D/g, "");
+    const message = encodeURIComponent(
+      `Halo Admin ${tenant.name}, saya penghuni kos ingin mengajukan laporan keluhan/kerusakan fasilitas. [Jelaskan keluhan di sini]`,
+    );
     return `https://wa.me/${cleanNumber}?text=${message}`;
   };
 
-  // Tema Template (modern, minimalist, bold)
-  const templateStyle = (theme as any).templateStyle || "modern";
-  
-  // Fungsi penentu gaya berdasarkan template
-  const getContainerClass = () => {
-    if (templateStyle === "minimalist") return "border border-gray-200 rounded-none";
-    if (templateStyle === "bold") return "border-4 border-gray-900 rounded-xl shadow-[8px_8px_0px_0px_rgba(17,24,39,1)]";
-    return "rounded-3xl border border-gray-100 shadow-sm"; // modern
-  };
-  
-  const getButtonClass = () => {
-    if (templateStyle === "minimalist") return "rounded-none border-2 border-primary bg-transparent text-primary hover:bg-primary hover:text-white";
-    if (templateStyle === "bold") return "rounded-lg border-2 border-gray-900 bg-primary text-white shadow-[4px_4px_0px_0px_rgba(17,24,39,1)] hover:translate-y-1 hover:shadow-none";
-    return "rounded-full bg-primary text-white shadow-lg shadow-indigo-200 hover:shadow-indigo-300 hover:-translate-y-0.5"; // modern
-  };
+  // Gaya template: modern, minimalist, bold
+  const templateStyle = theme.templateStyle || "modern";
+
+  const containerClass =
+    templateStyle === "minimalist"
+      ? "rounded-none border border-gray-300 bg-white"
+      : templateStyle === "bold"
+        ? "rounded-xl border-2 border-primary bg-white shadow-card"
+        : "rounded-xl border border-gray-200 bg-white shadow-card";
+
+  const buttonClass =
+    templateStyle === "minimalist"
+      ? "btn btn-lg w-full !rounded-none border-primary bg-white text-primary hover:bg-primary-soft"
+      : templateStyle === "bold"
+        ? "btn btn-primary btn-lg w-full border-2 border-primary"
+        : "btn btn-primary btn-lg w-full";
 
   return (
-    <div style={{ fontFamily: theme.fontFamily }} className="min-h-screen bg-gray-50 flex flex-col selection:bg-indigo-100">
-      {/* Dynamic CSS Variables */}
-      <style dangerouslySetInnerHTML={{__html: `
-        :root {
-          --primary-color: ${theme.primaryColor};
-        }
-        .bg-primary { background-color: var(--primary-color); }
-        .text-primary { color: var(--primary-color); }
-        .border-primary { border-color: var(--primary-color); }
-        html { scroll-behavior: smooth; }
-      `}} />
-
-      {/* Navbar Minimalis */}
-      <nav className={`bg-white py-4 px-6 md:px-12 flex justify-between items-center sticky top-0 z-50 ${templateStyle === 'minimalist' ? 'border-b-2 border-gray-900' : 'border-b border-gray-100 shadow-sm'}`}>
-        <div className="font-bold text-xl text-primary flex items-center gap-2">
-          {tenant.name}
-        </div>
-        <div className="hidden md:flex gap-6 items-center text-sm font-medium text-gray-600">
-          <a href="#hero" className="hover:text-primary transition-colors">Beranda</a>
-          <a href="#fasilitas" className="hover:text-primary transition-colors">Fasilitas</a>
-          <a href="#kamar" className="hover:text-primary transition-colors">Kamar</a>
-          {gallerySection.images?.length > 0 && <a href="#galeri" className="hover:text-primary transition-colors">Galeri</a>}
-          
-          {/* Tombol Lapor Kerusakan */}
-          <a 
-            href={generateComplaintLink()} 
-            target="_blank"
-            className="ml-4 bg-red-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-red-700 transition-colors shadow-sm"
-          >
+    <div style={themeVars} className="flex min-h-dvh flex-col bg-gray-50 text-gray-900">
+      {/* Navbar */}
+      <nav
+        className={`sticky top-0 z-40 flex h-16 items-center justify-between gap-4 bg-white px-5 md:px-12 ${
+          templateStyle === "minimalist" ? "border-b border-gray-300" : "border-b border-gray-200"
+        }`}
+      >
+        <div className="truncate text-xl font-bold text-primary">{tenant.name}</div>
+        <div className="flex items-center gap-6 text-sm font-medium text-gray-600">
+          <a href="#hero" className="hidden hover:text-primary md:block">
+            Beranda
+          </a>
+          <a href="#fasilitas" className="hidden hover:text-primary md:block">
+            Fasilitas
+          </a>
+          <a href="#kamar" className="hidden hover:text-primary md:block">
+            Kamar
+          </a>
+          {gallerySection.images?.length > 0 && (
+            <a href="#galeri" className="hidden hover:text-primary md:block">
+              Galeri
+            </a>
+          )}
+          <a href={generateComplaintLink()} target="_blank" rel="noreferrer" className="btn btn-secondary">
             Lapor Keluhan
           </a>
         </div>
@@ -154,55 +197,37 @@ export default async function PublicTenantPage(props: {
       {sectionTypesToRender.map((type, index) => {
         if (type === "hero") {
           return (
-            <section key={`sec-${index}`} id="hero" className={`text-white py-20 md:py-32 px-6 relative overflow-hidden ${templateStyle === 'bold' ? 'bg-gray-900' : 'bg-primary'}`}>
-              <div className="max-w-4xl mx-auto text-center relative z-10">
-                <h1 className={`text-4xl md:text-6xl font-extrabold mb-6 leading-tight ${templateStyle === 'minimalist' ? 'tracking-tighter' : 'tracking-tight'}`}>
+            <section key={`sec-${index}`} id="hero" className="scroll-mt-16 border-b border-primary-tint bg-primary-soft">
+              <div className="mx-auto max-w-6xl px-5 py-16 md:px-6 md:py-24">
+                <h1 className="max-w-3xl text-4xl font-extrabold leading-[1.05] tracking-tight md:text-6xl">
                   {heroSection.title}
                 </h1>
-                <p className="text-lg md:text-xl opacity-90 mb-10 max-w-2xl mx-auto leading-relaxed">
-                  {heroSection.subtitle}
-                </p>
-                <a 
+                <p className="mt-5 max-w-xl text-lg leading-relaxed text-gray-700">{heroSection.subtitle}</p>
+                <a
                   href="#kamar"
-                  className={`inline-block px-8 py-4 text-lg font-bold transition-all transform ${
-                    templateStyle === 'minimalist' ? 'bg-white text-gray-900 rounded-none border-2 border-transparent hover:bg-transparent hover:text-white hover:border-white' : 
-                    templateStyle === 'bold' ? 'bg-primary text-white rounded-xl shadow-[6px_6px_0px_0px_rgba(255,255,255,1)] hover:translate-y-1 hover:shadow-none border-2 border-white' :
-                    'bg-white text-primary rounded-full hover:shadow-xl hover:-translate-y-1'
-                  }`}
-                  style={templateStyle === 'modern' ? { color: theme.primaryColor } : {}}
+                  className={`mt-8 inline-flex ${buttonClass.replace("w-full", "w-auto")}`}
                 >
                   {heroSection.ctaText}
                 </a>
               </div>
-              
-              {/* Dekorasi Latar Belakang - Hanya jika bukan gaya minimalis */}
-              {templateStyle !== 'minimalist' && (
-                <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-                  <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                    <polygon fill="currentColor" points="0,100 100,0 100,100" />
-                  </svg>
-                </div>
-              )}
+              <div aria-hidden className="tile-strip" />
             </section>
           );
         }
 
         if (type === "features") {
           return (
-            <section key={`sec-${index}`} id="fasilitas" className="py-20 px-6 bg-white border-b border-gray-100">
-              <div className="max-w-6xl mx-auto text-center">
-                <h2 className="text-3xl font-bold text-gray-900 mb-12 uppercase tracking-wide">{featuresSection.title}</h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <section key={`sec-${index}`} id="fasilitas" className="scroll-mt-16 bg-white py-16 md:py-20">
+              <div className="mx-auto max-w-6xl px-5 md:px-6">
+                <h2 className="text-3xl font-bold tracking-tight md:text-4xl">{featuresSection.title}</h2>
+                <ul className="mt-8 grid gap-x-10 gap-y-4 sm:grid-cols-2">
                   {featuresSection.items.map((item: any, idx: number) => (
-                    <div key={idx} className={`p-8 bg-gray-50 hover:shadow-md transition-shadow ${getContainerClass()}`}>
-                      <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm text-primary">
-                        <CheckCircle2 className="w-7 h-7" />
-                      </div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">{item.text}</h3>
-                    </div>
+                    <li key={idx} className="flex items-start gap-3 text-lg text-gray-800">
+                      <span aria-hidden className="mt-2.5 size-2.5 shrink-0 rotate-45 rounded-[2px] bg-primary" />
+                      {item.text}
+                    </li>
                   ))}
-                </div>
+                </ul>
               </div>
             </section>
           );
@@ -210,60 +235,59 @@ export default async function PublicTenantPage(props: {
 
         if (type === "rooms") {
           return (
-            <section key={`sec-${index}`} id="kamar" className="py-20 px-6 bg-gray-50 flex-1">
-              <div className="max-w-6xl mx-auto">
-                <div className="text-center mb-16">
-                  <h2 className="text-3xl font-bold text-gray-900 mb-4 uppercase tracking-wide">{featuresSection.roomsTitle || "Pilihan Kamar"}</h2>
-                  <div className={`h-1 mx-auto ${templateStyle === 'minimalist' ? 'w-full max-w-xs bg-gray-900' : 'w-24 rounded-full bg-primary'}`}></div>
-                </div>
+            <section key={`sec-${index}`} id="kamar" className="flex-1 scroll-mt-16 bg-gray-50 py-16 md:py-20">
+              <div className="mx-auto max-w-6xl px-5 md:px-6">
+                <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+                  {featuresSection.roomsTitle || "Pilihan Kamar"}
+                </h2>
 
                 {rooms && rooms.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {rooms.map((room) => (
-                      <div key={room.id} className={`bg-white overflow-hidden flex flex-col hover:-translate-y-1 transition-transform duration-300 ${getContainerClass()}`}>
-                        {/* Status Label */}
-                        <div className="p-6 pb-0 flex justify-between items-start">
-                          <span className="inline-block px-3 py-1 bg-green-100 text-green-700 text-xs font-bold uppercase rounded-full tracking-wider">
+                      <div key={room.id} className={`flex flex-col ${containerClass}`}>
+                        <div className="flex flex-1 flex-col p-6">
+                          <span className="inline-flex items-center gap-2 text-sm font-semibold text-green-800">
+                            <span aria-hidden className="tile tile-sm tile-available" />
                             Tersedia
                           </span>
-                        </div>
-                        
-                        <div className="p-6 flex-1 flex flex-col">
-                          <h3 className="text-2xl font-bold text-gray-900 mb-2">{room.name}</h3>
-                          <p className="text-3xl font-extrabold text-primary mb-6">
-                            {formatRupiah(room.price)}<span className="text-sm font-medium text-gray-500">/bulan</span>
+                          <h3 className="mt-3 text-2xl font-bold">{room.name}</h3>
+                          {(room.tenant_type || (room.size_length && room.size_width)) && (
+                            <p className="mt-1 text-sm text-gray-600">
+                              {[
+                                room.tenant_type && `Kamar ${tenantTypeLabel[room.tenant_type as TenantType] ?? ""}`.trim(),
+                                room.size_length && room.size_width && formatSize(room.size_length, room.size_width),
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </p>
+                          )}
+                          <p className="mt-1 text-3xl font-extrabold tracking-tight text-primary">
+                            {formatRupiah(room.price)}
+                            <span className="text-sm font-medium text-gray-600">/bulan</span>
                           </p>
-                          
+
                           {room.facilities && (room.facilities as any).length > 0 && (
-                            <div className="mb-8">
-                              <h4 className="text-sm font-bold text-gray-900 mb-3">Fasilitas Kamar:</h4>
-                              <ul className="space-y-2">
-                                {(room.facilities as string[]).map((fac: string, idx: number) => (
-                                  <li key={idx} className="flex items-center text-sm text-gray-600">
-                                    <CheckCircle2 className="w-4 h-4 text-primary mr-2 flex-shrink-0" />
-                                    {fac}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
+                            <ul className="mt-5 flex flex-wrap gap-2">
+                              {(room.facilities as string[]).map((fac: string, idx: number) => (
+                                <li key={idx} className="rounded-md bg-gray-100 px-2.5 py-1 text-sm text-gray-700">
+                                  {fac}
+                                </li>
+                              ))}
+                            </ul>
                           )}
 
-                          <div className="mt-auto pt-4 border-t border-gray-100">
-                            <BookingModal 
-                              tenantId={tenant.id} 
-                              room={{ id: room.id, name: room.name, price: room.price }} 
-                              buttonClass={getButtonClass()} 
-                            />
+                          <div className="mt-auto pt-6">
+                            <BookingModal subdomain={params.subdomain} roomId={room.id} buttonClass={buttonClass} />
                           </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center p-12 bg-white rounded-3xl border border-dashed border-gray-300">
-                    <BedDouble className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <div className="mt-8 rounded-xl border border-dashed border-gray-300 bg-white p-12 text-center">
+                    <BedDouble className="mx-auto mb-4 size-10 text-gray-500" />
                     <h3 className="text-lg font-bold text-gray-900">Belum ada kamar yang tersedia</h3>
-                    <p className="text-gray-500">Pemilik kos belum menambahkan data kamar.</p>
+                    <p className="mt-1 text-gray-600">Pemilik kos belum menambahkan data kamar.</p>
                   </div>
                 )}
               </div>
@@ -273,25 +297,25 @@ export default async function PublicTenantPage(props: {
 
         if (type === "gallery") {
           return (
-            <section key={`sec-${index}`} id="galeri" className="py-20 px-6 bg-white border-b border-gray-100">
-              <div className="max-w-6xl mx-auto text-center">
-                <h2 className="text-3xl font-bold text-gray-900 mb-12">{gallerySection.title}</h2>
-                
+            <section key={`sec-${index}`} id="galeri" className="scroll-mt-16 bg-white py-16 md:py-20">
+              <div className="mx-auto max-w-6xl px-5 md:px-6">
+                <h2 className="text-3xl font-bold tracking-tight md:text-4xl">{gallerySection.title}</h2>
+
                 {gallerySection.images && gallerySection.images.length > 0 ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                  <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5">
                     {gallerySection.images.map((img: any, idx: number) => (
-                      <div key={idx} className="aspect-[4/3] rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group relative">
+                      <div key={idx} className="aspect-[4/3] overflow-hidden rounded-xl bg-gray-100">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img 
-                          src={img.url} 
-                          alt={`Galeri ${idx + 1}`} 
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        <img
+                          src={img.url}
+                          alt={`Foto galeri ${tenant.name} ${idx + 1}`}
+                          className="size-full object-cover"
                         />
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="p-12 text-center border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50 text-gray-400 font-medium">
+                  <div className="mt-8 rounded-xl border border-dashed border-gray-300 bg-gray-50 p-12 text-center font-medium text-gray-600">
                     Belum ada foto yang diunggah ke Galeri.
                   </div>
                 )}
@@ -303,20 +327,92 @@ export default async function PublicTenantPage(props: {
         return null;
       })}
 
+      {/* Informasi kos: lokasi, fasilitas, dan peraturan dari pendaftaran */}
+      {hasInfo && (
+        <section id="info" className="scroll-mt-16 bg-gray-50 py-16 md:py-20">
+          <div className="mx-auto max-w-6xl px-5 md:px-6">
+            <h2 className="text-3xl font-bold tracking-tight md:text-4xl">Tentang Kos</h2>
+
+            <div className="mt-8 grid gap-6 lg:grid-cols-3">
+              {(tenant.address || tenant.landmark || hasCoords) && (
+                <div className={`p-6 ${containerClass}`}>
+                  <h3 className="text-lg font-bold">Lokasi</h3>
+                  {tenant.address && <p className="mt-3 text-gray-700">{tenant.address}</p>}
+                  {tenant.landmark && (
+                    <p className="mt-3 text-sm text-gray-600">
+                      <span className="font-semibold text-gray-800">Patokan: </span>
+                      {tenant.landmark}
+                    </p>
+                  )}
+                  {hasCoords && (
+                    <a
+                      href={`https://www.openstreetmap.org/?mlat=${tenant.latitude}&mlon=${tenant.longitude}#map=17/${tenant.latitude}/${tenant.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+                    >
+                      <MapPin className="size-4" />
+                      Lihat di peta
+                    </a>
+                  )}
+                </div>
+              )}
+
+              {facilityList.length > 0 && (
+                <div className={`p-6 ${containerClass}`}>
+                  <h3 className="text-lg font-bold">Fasilitas</h3>
+                  <div className="mt-3 space-y-4">
+                    {facilityList.map((group) => (
+                      <div key={group.title}>
+                        <p className="text-sm font-semibold text-gray-800">{group.title}</p>
+                        <ul className="mt-1.5 flex flex-wrap gap-2">
+                          {group.items.map((item) => (
+                            <li key={item} className="rounded-md bg-gray-100 px-2.5 py-1 text-sm text-gray-700">
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {ruleLines.length > 0 && (
+                <div className={`p-6 ${containerClass}`}>
+                  <h3 className="text-lg font-bold">Peraturan Kos</h3>
+                  <ul className="mt-3 space-y-2 text-sm text-gray-700">
+                    {ruleLines.map((line) => (
+                      <li key={line} className="flex gap-2">
+                        <span aria-hidden className="mt-1.5 size-1.5 shrink-0 rotate-45 bg-primary" />
+                        {line}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 py-12 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+      <footer className="border-t border-gray-200 bg-white px-5 py-10 md:px-12">
+        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 md:flex-row md:items-center">
           <div>
-            <div className="font-bold text-xl text-primary mb-2">{tenant.name}</div>
+            <div className="mb-2 text-xl font-bold text-primary">{tenant.name}</div>
             {tenant.address && (
-              <div className="flex items-center gap-2 text-gray-500 text-sm">
-                <MapPin className="w-4 h-4" />
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <MapPin className="size-4" />
                 {tenant.address}
               </div>
             )}
           </div>
-          <div className="text-sm text-gray-400">
-            Dibuat menggunakan <a href="#" className="font-semibold text-primary hover:underline">SaaS Kos</a>
+          <div className="text-sm text-gray-600">
+            Dibuat dengan{" "}
+            <Link href="/" className="font-semibold text-primary hover:underline">
+              Build Kos
+            </Link>
           </div>
         </div>
       </footer>

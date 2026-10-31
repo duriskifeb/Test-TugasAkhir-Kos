@@ -35,7 +35,7 @@ export function BookingsClient({ initialData }: { initialData: any[] }) {
     return (
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
         <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-          <CalendarDays className="w-8 h-8 text-gray-400" />
+          <CalendarDays className="w-8 h-8 text-gray-500" />
         </div>
         <h3 className="text-lg font-bold text-gray-900 mb-1">Belum ada pengajuan pemesanan</h3>
         <p className="text-gray-500 max-w-sm mx-auto">Pengajuan dari website publik akan muncul di sini untuk Anda tinjau.</p>
@@ -50,7 +50,7 @@ export function BookingsClient({ initialData }: { initialData: any[] }) {
           <div className="p-5 border-b border-gray-50">
             <div className="flex justify-between items-start mb-4">
               {getStatusBadge(booking.status)}
-              <span className="text-xs text-gray-400 font-medium">
+              <span className="text-xs text-gray-500 font-medium">
                 {new Date(booking.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
               </span>
             </div>
@@ -66,12 +66,12 @@ export function BookingsClient({ initialData }: { initialData: any[] }) {
           
           <div className="p-5 flex-1 bg-gray-50/50 space-y-4">
             <div>
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">Kamar Pilihan</span>
-              <p className="text-sm font-medium text-gray-900">{booking.rooms?.name || 'Kamar Tidak Diketahui'}</p>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Kamar Pilihan</span>
+              <p className="text-sm font-medium text-gray-900">{booking.room_name_snapshot}</p>
             </div>
             
             <div>
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">Rencana Check-in</span>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Rencana Check-in</span>
               <p className="text-sm font-medium text-gray-900 flex items-center gap-2">
                 <CalendarDays className="w-4 h-4 text-indigo-500" />
                 {new Date(booking.planned_check_in).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
@@ -80,7 +80,7 @@ export function BookingsClient({ initialData }: { initialData: any[] }) {
 
             {booking.additional_notes && (
               <div>
-                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">Catatan</span>
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Catatan</span>
                 <p className="text-sm text-gray-600 italic bg-white p-3 rounded-xl border border-gray-100">
                   "{booking.additional_notes}"
                 </p>
@@ -100,7 +100,7 @@ export function BookingsClient({ initialData }: { initialData: any[] }) {
               <button 
                 onClick={() => handleUpdateStatus(booking.id, 'approved')}
                 disabled={loadingId === booking.id}
-                className="py-2.5 px-4 rounded-xl text-sm font-bold bg-[#3b23c6] text-white shadow-md shadow-indigo-200 hover:bg-indigo-700 hover:-translate-y-0.5 transition-all disabled:opacity-50"
+                className="py-2.5 px-4 rounded-xl text-sm font-bold bg-primary text-white shadow-md shadow-indigo-200 hover:bg-indigo-700 hover:-translate-y-0.5 transition-all disabled:opacity-50"
               >
                 Terima
               </button>

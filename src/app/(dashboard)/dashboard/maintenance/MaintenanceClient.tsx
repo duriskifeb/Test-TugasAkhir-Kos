@@ -17,7 +17,7 @@ interface Report {
   status: string;
   created_at: string;
   resolved_at?: string | null;
-  rooms?: { name: string } | null;
+  room_name_snapshot?: string | null;
 }
 
 export function MaintenanceClient({ initialReports, rooms }: { initialReports: Report[], rooms: Room[] }) {
@@ -87,7 +87,7 @@ export function MaintenanceClient({ initialReports, rooms }: { initialReports: R
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[#3b23c6] text-white rounded-lg font-medium hover:bg-[#321ca8] transition-colors text-sm"
+          className="btn btn-primary"
         >
           <Plus className="w-4 h-4" />
           Tambah Laporan
@@ -123,7 +123,7 @@ export function MaintenanceClient({ initialReports, rooms }: { initialReports: R
       {initialReports.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 flex flex-col items-center justify-center text-center">
           <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-            <Wrench className="w-8 h-8 text-gray-400" />
+            <Wrench className="w-8 h-8 text-gray-500" />
           </div>
           <h3 className="text-lg font-bold text-gray-900 mb-2">Belum Ada Laporan Keluhan</h3>
           <p className="text-gray-500 max-w-md">
@@ -150,7 +150,7 @@ export function MaintenanceClient({ initialReports, rooms }: { initialReports: R
                     {new Date(r.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </td>
                   <td className="p-4 text-sm font-semibold text-gray-800">
-                    {r.rooms?.name || <span className="text-gray-400 font-normal italic">Area Umum</span>}
+                    {r.room_name_snapshot || <span className="text-gray-500 font-normal italic">Area Umum</span>}
                   </td>
                   <td className="p-4 text-sm text-gray-600 max-w-xs">
                     <p className="line-clamp-2">{r.description}</p>
@@ -161,14 +161,14 @@ export function MaintenanceClient({ initialReports, rooms }: { initialReports: R
                   <td className="p-4">
                     {getStatusBadge(r.status)}
                     {r.resolved_at && (
-                      <div className="text-[10px] text-gray-400 mt-1">
+                      <div className="text-[10px] text-gray-500 mt-1">
                         Selesai: {new Date(r.resolved_at).toLocaleDateString('id-ID')}
                       </div>
                     )}
                   </td>
                   <td className="p-4 text-right">
                     {updatingId === r.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin ml-auto text-gray-400" />
+                      <Loader2 className="w-4 h-4 animate-spin ml-auto text-gray-500" />
                     ) : r.status === "open" ? (
                       <button
                         onClick={() => handleStatusUpdate(r.id, "in_progress")}
@@ -184,7 +184,7 @@ export function MaintenanceClient({ initialReports, rooms }: { initialReports: R
                         Tandai Selesai
                       </button>
                     ) : (
-                      <span className="text-xs text-gray-400 font-medium">Selesai</span>
+                      <span className="text-xs text-gray-500 font-medium">Selesai</span>
                     )}
                   </td>
                 </tr>
@@ -196,16 +196,16 @@ export function MaintenanceClient({ initialReports, rooms }: { initialReports: R
 
       {/* Modal Form Tambah Laporan */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-gray-900/30 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-xl">
             <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
               <h3 className="font-bold text-gray-900">Tambah Laporan Keluhan</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-gray-600 text-xl">×</button>
             </div>
             <form onSubmit={handleSubmit} className="p-5 space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Kamar (Opsional)</label>
-                <select name="roomId" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#3b23c6]">
+                <select name="roomId" className="field">
                   <option value="">-- Area Umum / Tidak Spesifik --</option>
                   {rooms.map(r => (
                     <option key={r.id} value={r.id}>{r.name}</option>
@@ -219,22 +219,22 @@ export function MaintenanceClient({ initialReports, rooms }: { initialReports: R
                   name="description"
                   rows={4}
                   placeholder="Contoh: Kipas angin di kamar 101 tidak berfungsi sejak tanggal 10 September..."
-                  className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#3b23c6] resize-none"
+                  className="field resize-none"
                 />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Prioritas</label>
-                <select name="priority" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#3b23c6]">
-                  <option value="low">Rendah — Tidak mendesak</option>
-                  <option value="medium" selected>Sedang — Perlu segera ditangani</option>
-                  <option value="high">Tinggi — Mengganggu kenyamanan</option>
+                <select name="priority" defaultValue="medium" className="field">
+                  <option value="low">Rendah - Tidak mendesak</option>
+                  <option value="medium">Sedang - Perlu segera ditangani</option>
+                  <option value="high">Tinggi - Mengganggu kenyamanan</option>
                 </select>
               </div>
               <div className="pt-2 flex gap-3">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary flex-1">
                   Batal
                 </button>
-                <button type="submit" disabled={isLoading} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#3b23c6] text-white rounded-xl font-medium hover:bg-[#321ca8] transition-colors disabled:opacity-70">
+                <button type="submit" disabled={isLoading} className="btn btn-primary flex-1">
                   {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                   Simpan Laporan
                 </button>

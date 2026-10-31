@@ -80,14 +80,14 @@ export default function RentersActivePage() {
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
                 placeholder="Masukkan kata sandi akun Anda"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-black focus:ring-2 focus:ring-blue-500"
+                className="field"
               />
             </div>
             {authError && <p className="text-red-500 text-xs">{authError}</p>}
             <button
               type="submit"
               disabled={verifying}
-              className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors"
+              className="btn btn-primary w-full"
             >
               {verifying ? "Memverifikasi..." : "Lanjutkan"}
             </button>

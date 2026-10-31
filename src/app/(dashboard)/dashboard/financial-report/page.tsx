@@ -87,7 +87,8 @@ export default function FinancialReportPage() {
         const { data: rooms } = await supabase
           .from("rooms")
           .select("status")
-          .in("boarding_house_id", tenantIds);
+          .in("boarding_house_id", tenantIds)
+          .is("deleted_at", null);
 
         // Hitung total revenue & breakdown bulanan dari payments
         let totalRevenue = 0;
@@ -158,8 +159,8 @@ export default function FinancialReportPage() {
       {
         label: "Pendapatan (Rp)",
         data: reportData.monthlyRevenue,
-        backgroundColor: "rgba(59, 35, 198, 0.75)",
-        borderColor: "#3b23c6",
+        backgroundColor: "rgba(47, 91, 220, 0.8)",
+        borderColor: "#2f5bdc",
         borderWidth: 2,
         borderRadius: 8,
         borderSkipped: false,
@@ -203,10 +204,10 @@ export default function FinancialReportPage() {
       {
         label: "Tren Pendapatan",
         data: reportData.monthlyRevenue,
-        borderColor: "#3b23c6",
-        backgroundColor: "rgba(59, 35, 198, 0.08)",
+        borderColor: "#2f5bdc",
+        backgroundColor: "rgba(47, 91, 220, 0.1)",
         borderWidth: 2.5,
-        pointBackgroundColor: "#3b23c6",
+        pointBackgroundColor: "#2f5bdc",
         pointRadius: 4,
         pointHoverRadius: 6,
         fill: true,
@@ -248,8 +249,8 @@ export default function FinancialReportPage() {
     datasets: [
       {
         data: [reportData.occupiedRooms, reportData.availableRooms],
-        backgroundColor: ["#3b23c6", "#e0e7ff"],
-        borderColor: ["#3b23c6", "#c7d2fe"],
+        backgroundColor: ["#2f5bdc", "#dbe7ff"],
+        borderColor: ["#2f5bdc", "#bfd2ff"],
         borderWidth: 2,
         hoverOffset: 6,
       },
@@ -284,7 +285,7 @@ export default function FinancialReportPage() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <BarChart3 className="w-6 h-6 text-[#3b23c6]" />
+          <BarChart3 className="w-6 h-6 text-primary" />
           Laporan Keuangan
         </h1>
         <p className="text-gray-500 mt-1">
@@ -305,7 +306,7 @@ export default function FinancialReportPage() {
           <h3 className="text-2xl font-bold text-gray-900">
             {formatRupiah(reportData.totalRevenue)}
           </h3>
-          <p className="text-xs text-gray-400 mt-1">Akumulasi semua cabang</p>
+          <p className="text-xs text-gray-500 mt-1">Akumulasi semua cabang</p>
         </div>
 
         {/* Transaksi Lunas */}
@@ -317,9 +318,9 @@ export default function FinancialReportPage() {
             <p className="text-sm font-medium text-gray-500">Transaksi Lunas</p>
           </div>
           <h3 className="text-2xl font-bold text-gray-900">
-            {reportData.paidCount} <span className="text-base font-normal text-gray-400">pembayaran</span>
+            {reportData.paidCount} <span className="text-base font-normal text-gray-500">pembayaran</span>
           </h3>
-          <p className="text-xs text-gray-400 mt-1">Status: paid / verified</p>
+          <p className="text-xs text-gray-500 mt-1">Status: paid / verified</p>
         </div>
 
         {/* Menunggu Pembayaran */}
@@ -331,9 +332,9 @@ export default function FinancialReportPage() {
             <p className="text-sm font-medium text-gray-500">Menunggu Pembayaran</p>
           </div>
           <h3 className="text-2xl font-bold text-gray-900">
-            {reportData.pendingCount} <span className="text-base font-normal text-gray-400">transaksi</span>
+            {reportData.pendingCount} <span className="text-base font-normal text-gray-500">transaksi</span>
           </h3>
-          <p className="text-xs text-gray-400 mt-1">Belum lunas / menunggu verifikasi</p>
+          <p className="text-xs text-gray-500 mt-1">Belum lunas / menunggu verifikasi</p>
         </div>
       </div>
 
@@ -343,10 +344,10 @@ export default function FinancialReportPage() {
         {/* Bar Chart - Pendapatan per Bulan */}
         <div className="lg:col-span-2 bg-white border border-gray-100 rounded-xl shadow-sm p-6">
           <h2 className="text-base font-bold text-gray-900 mb-1 flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-gray-400" />
+            <Calendar className="w-4 h-4 text-gray-500" />
             Pendapatan Per Bulan
           </h2>
-          <p className="text-xs text-gray-400 mb-5">Distribusi pendapatan dalam setahun penuh</p>
+          <p className="text-xs text-gray-500 mb-5">Distribusi pendapatan dalam setahun penuh</p>
           <div className="h-64">
             <Bar data={barChartData} options={barChartOptions} />
           </div>
@@ -355,26 +356,26 @@ export default function FinancialReportPage() {
         {/* Doughnut Chart - Status Kamar */}
         <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6 flex flex-col">
           <h2 className="text-base font-bold text-gray-900 mb-1">Tingkat Hunian</h2>
-          <p className="text-xs text-gray-400 mb-4">Status kamar seluruh cabang</p>
+          <p className="text-xs text-gray-500 mb-4">Status kamar seluruh cabang</p>
           <div className="flex-1 flex items-center justify-center" style={{ minHeight: "200px" }}>
             {(reportData.occupiedRooms + reportData.availableRooms) > 0 ? (
               <div className="w-full h-52">
                 <Doughnut data={doughnutData} options={doughnutOptions} />
               </div>
             ) : (
-              <p className="text-gray-400 text-sm text-center">Belum ada data kamar</p>
+              <p className="text-gray-500 text-sm text-center">Belum ada data kamar</p>
             )}
           </div>
           {(reportData.occupiedRooms + reportData.availableRooms) > 0 && (
             <div className="mt-4 text-center">
-              <span className="text-2xl font-bold text-[#3b23c6]">
+              <span className="text-2xl font-bold text-primary">
                 {Math.round(
                   (reportData.occupiedRooms /
                     (reportData.occupiedRooms + reportData.availableRooms)) *
                     100
                 )}%
               </span>
-              <p className="text-xs text-gray-400 mt-1">Tingkat Hunian</p>
+              <p className="text-xs text-gray-500 mt-1">Tingkat Hunian</p>
             </div>
           )}
         </div>
@@ -383,7 +384,7 @@ export default function FinancialReportPage() {
       {/* Line Chart - Tren Pendapatan */}
       <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
         <h2 className="text-base font-bold text-gray-900 mb-1">Tren Pendapatan Tahunan</h2>
-        <p className="text-xs text-gray-400 mb-5">Pola pertumbuhan pendapatan sepanjang tahun</p>
+        <p className="text-xs text-gray-500 mb-5">Pola pertumbuhan pendapatan sepanjang tahun</p>
         <div className="h-64">
           <Line data={lineChartData} options={lineChartOptions as any} />
         </div>

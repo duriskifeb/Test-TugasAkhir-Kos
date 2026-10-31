@@ -27,7 +27,7 @@ export default async function TenantsPage() {
   // Fetch Renters
   const { data: renters } = await supabase
     .from("renters")
-    .select(`*, rooms(name)`)
+    .select("*")
     .eq("tenant_id", tenantId)
     .order("created_at", { ascending: false });
 
@@ -37,6 +37,7 @@ export default async function TenantsPage() {
     .select("id, name")
     .eq("boarding_house_id", tenantId)
     .eq("status", "available")
+    .is("deleted_at", null)
     .order("name", { ascending: true });
 
   return (
@@ -56,25 +57,25 @@ export default async function TenantsPage() {
         <div className="lg:col-span-1">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Plus className="w-5 h-5 text-[#3b23c6]" />
+              <Plus className="w-5 h-5 text-primary" />
               Tambah Penghuni Baru
             </h2>
             <form action={addTenant} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
-                <input type="text" name="fullName" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3b23c6] focus:border-transparent outline-none" placeholder="Budi Santoso" />
+                <input type="text" name="fullName" required className="field" placeholder="Budi Santoso" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nomor Telepon / WA</label>
-                <input type="text" name="phoneNumber" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3b23c6] focus:border-transparent outline-none" placeholder="08123456789" />
+                <input type="text" name="phoneNumber" className="field" placeholder="08123456789" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal Masuk (Check-In)</label>
-                <input type="date" name="checkInDate" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3b23c6] focus:border-transparent outline-none" />
+                <input type="date" name="checkInDate" required className="field" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Pilih Kamar</label>
-                <select name="roomId" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3b23c6] focus:border-transparent outline-none">
+                <select name="roomId" required className="field">
                   <option value="">-- Pilih Kamar Kosong --</option>
                   {availableRooms?.map(room => (
                     <option key={room.id} value={room.id}>{room.name}</option>
@@ -121,7 +122,7 @@ export default async function TenantsPage() {
                         )}
                       </h3>
                       <div className="text-sm text-gray-500 mt-1 flex flex-wrap gap-x-4 gap-y-1">
-                        <span>Kamar: <strong>{renter.rooms?.name || "-"}</strong></span>
+                        <span>Kamar: <strong>{renter.room_name_snapshot || "-"}</strong></span>
                         <span>WA: {renter.phone_number || "-"}</span>
                         <span>Check-In: {new Date(renter.check_in_date).toLocaleDateString("id-ID")}</span>
                       </div>

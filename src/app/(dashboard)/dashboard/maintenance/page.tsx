@@ -55,6 +55,7 @@ export default async function MaintenancePage() {
     .from("rooms")
     .select("id, name")
     .eq("boarding_house_id", tenantId)
+    .is("deleted_at", null)
     .order("name", { ascending: true });
 
   // Fetch laporan keluhan

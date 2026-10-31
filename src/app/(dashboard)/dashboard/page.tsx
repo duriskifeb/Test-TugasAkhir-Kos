@@ -86,7 +86,8 @@ export default async function DashboardPage() {
     const { data: rooms } = await supabase
       .from("rooms")
       .select("status")
-      .eq("boarding_house_id", tenantId);
+      .eq("boarding_house_id", tenantId)
+      .is("deleted_at", null);
     
     if (rooms) {
       metrics.totalRooms = rooms.length;

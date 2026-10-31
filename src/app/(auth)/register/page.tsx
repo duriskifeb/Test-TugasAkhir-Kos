@@ -1,9 +1,11 @@
 "use client";
 
-import { Eye, EyeOff, XCircle, CheckCircle2, X } from "lucide-react";
+import Link from "next/link";
+import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { AuthShell, AuthToast } from "@/components/ui/AuthShell";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -15,7 +17,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [role, setRole] = useState<"owner" | "renter">("owner");
+  const [role, setRole] = useState<"owner" | "staff">("owner");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,264 +38,214 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const { data: signUpData, error: signUpError } =
-        await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              full_name: fullName,
-              phone: phone,
-              role: role, // Kirim role ke metadata agar trigger supabase menangkapnya
-            },
+      // Peran akun ditetapkan oleh database (trigger handle_new_user). Di sini hanya
+      // memastikan pilihan pendaftar sesuai dengan undangan dari pemilik kos.
+      const { data: invited, error: inviteError } = await supabase.rpc("is_staff_invited", {
+        p_email: email,
+      });
+      if (inviteError) throw inviteError;
+
+      if (role === "staff" && !invited) {
+        setError("Email ini belum didaftarkan oleh pemilik kos. Minta pemilik menambahkannya di menu Kelola Akun Staf.");
+        return;
+      }
+      if (role === "owner" && invited) {
+        setError('Email ini terdaftar sebagai pengelola kos. Pilih "Pengelola Kos" untuk mendaftar.');
+        return;
+      }
+
+      const { error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            phone: phone,
+            role: role,
           },
-        });
+        },
+      });
 
       if (signUpError) throw signUpError;
-
-      if (signUpData.user) {
-        // Cek apakah dia staff (khusus jika mendaftar dengan email staff yang diundang)
-        // Kita abaikan jika dia memilih mendaftar sebagai renter
-        let finalRole: "owner" | "renter" | "staff" = role;
-        let isStaff = false;
-        
-        if (role === "owner") {
-            const { data: staffCheck } = await supabase
-            .from("tenant_staffs")
-            .select("id")
-            .eq("email", email)
-            .maybeSingle();
-
-            if (staffCheck) {
-                finalRole = "staff";
-                isStaff = true;
-            }
-        }
-
-        // Upsert manual ke profiles (sebagai backup jika trigger gagal/lambat)
-        await supabase.from("profiles").upsert({
-          id: signUpData.user.id,
-          full_name: fullName,
-          phone: phone,
-          role: finalRole,
-          updated_at: new Date().toISOString(),
-        });
-
-        if (isStaff) {
-          await supabase
-            .from("tenant_staffs")
-            .update({ status: "active" })
-            .eq("email", email);
-        }
-      }
 
       setMessage("Registrasi berhasil! Silakan login dengan akun Anda.");
       setTimeout(() => {
         router.push("/login");
       }, 2000);
     } catch (err: any) {
-      setError(err?.message || "Terjadi kesalahan yang tidak terduga.");
+      setError(
+        err?.code === "PGRST202"
+          ? "Pendaftaran belum siap: migrasi database terbaru (is_staff_invited) belum dijalankan."
+          : err?.message || "Terjadi kesalahan yang tidak terduga.",
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  const roleOptions = [
+    { value: "owner", label: "Pemilik Kos" },
+    { value: "staff", label: "Pengelola Kos" },
+  ] as const;
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8">
-      <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-sm border border-gray-200">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Daftar Akun</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Buat akun untuk masuk ke Pintu Berkah
-          </p>
+    <AuthShell
+      title="Buat Akun Baru"
+      subtitle="Isi data berikut untuk membuat akun Build Kos Anda."
+      aside={{
+        title: "Mulai kelola kos Anda bersama Build Kos.",
+        text: "Buat akun pemilik kos atau pengelola kos, lalu masuk ke dashboard Anda.",
+      }}
+      footer={
+        <>
+          Sudah punya akun?{" "}
+          <Link href="/login" className="font-semibold text-primary hover:underline">
+            Masuk sekarang
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <fieldset>
+          <legend className="mb-1.5 block text-sm font-medium text-gray-800">Daftar sebagai</legend>
+          <div className="grid grid-cols-2 gap-2">
+            {roleOptions.map((option) => (
+              <label
+                key={option.value}
+                className="flex cursor-pointer items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-3 text-sm font-semibold text-gray-700 transition-colors hover:border-gray-400 has-[:checked]:border-primary has-[:checked]:bg-primary-soft has-[:checked]:text-primary has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-primary"
+              >
+                <input
+                  type="radio"
+                  name="role"
+                  value={option.value}
+                  checked={role === option.value}
+                  onChange={() => setRole(option.value)}
+                  className="sr-only"
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
+          {role === "staff" && (
+            <p className="mt-2 text-sm text-gray-600">
+              Gunakan email yang didaftarkan pemilik kos di menu Kelola Akun Staf.
+            </p>
+          )}
+        </fieldset>
+
+        <div>
+          <label htmlFor="fullName" className="mb-1.5 block text-sm font-medium text-gray-800">
+            Nama Lengkap
+          </label>
+          <input
+            id="fullName"
+            type="text"
+            required
+            autoComplete="name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="Contoh: Siti Rahmawati"
+            className="field"
+          />
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          
-          {/* Pilihan Role */}
-          <div className="mb-4">
-             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Daftar Sebagai
-            </label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="role"
-                  value="owner"
-                  checked={role === "owner"}
-                  onChange={() => setRole("owner")}
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">Pemilik Kos (SaaS)</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="role"
-                  value="renter"
-                  checked={role === "renter"}
-                  onChange={() => setRole("renter")}
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">Penyewa Kos</span>
-              </label>
-            </div>
-          </div>
+        <div>
+          <label htmlFor="phone" className="mb-1.5 block text-sm font-medium text-gray-800">
+            Nomor Telepon
+          </label>
+          <input
+            id="phone"
+            type="tel"
+            required
+            autoComplete="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="Contoh: 08123456789"
+            className="field"
+          />
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nama Lengkap
-            </label>
+        <div>
+          <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-gray-800">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="nama@email.com"
+            className="field"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-gray-800">
+            Kata Sandi
+          </label>
+          <div className="relative">
             <input
-              type="text"
+              id="password"
+              type={showPassword ? "text" : "password"}
               required
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Contoh: John Doe"
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Minimal 6 karakter"
+              className="field pr-11"
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nomor Telepon
-            </label>
-            <input
-              type="tel"
-              required
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="Contoh: 08123456789"
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="nama@email.com"
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Kata Sandi
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Minimal 6 karakter"
-                className="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-lg text-sm text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showPassword ? (
-                  <EyeOff className="w-4 h-4" />
-                ) : (
-                  <Eye className="w-4 h-4" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Konfirmasi Kata Sandi
-            </label>
-            <div className="relative">
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Ulangi kata sandi"
-                className="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-lg text-sm text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showConfirmPassword ? (
-                  <EyeOff className="w-4 h-4" />
-                ) : (
-                  <Eye className="w-4 h-4" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors"
-          >
-            {loading ? "Memproses..." : "Daftar Sekarang"}
-          </button>
-        </form>
-
-        {/* Footer */}
-        <p className="mt-5 text-center text-sm text-gray-500">
-          Sudah punya akun?{" "}
-          <a
-            href="/login"
-            className="text-blue-600 font-semibold hover:underline"
-          >
-            Masuk di sini
-          </a>
-        </p>
-      </div>
-
-      {/* Toast Notifikasi */}
-      {(error || message) && (
-        <div className="fixed top-5 right-5 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
-          <div
-            className={`rounded-lg shadow-lg border p-4 max-w-xs w-full flex items-start gap-3 ${
-              error
-                ? "bg-white border-red-200"
-                : "bg-gray-900 border-gray-700 text-white"
-            }`}
-          >
-            <div className="shrink-0 mt-0.5">
-              {error ? (
-                <XCircle className="w-5 h-5 text-red-500" />
-              ) : (
-                <CheckCircle2 className="w-5 h-5 text-green-400" />
-              )}
-            </div>
-            <div className="flex-1 text-sm">
-              <p className={error ? "text-gray-800" : "text-white"}>
-                {error || message}
-              </p>
-            </div>
             <button
-              onClick={() => {
-                setError(null);
-                setMessage(null);
-              }}
-              className="shrink-0 text-gray-400 hover:text-gray-600"
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-900"
             >
-              <X className="w-4 h-4" />
+              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
             </button>
           </div>
         </div>
-      )}
-    </div>
+
+        <div>
+          <label htmlFor="confirmPassword" className="mb-1.5 block text-sm font-medium text-gray-800">
+            Konfirmasi Kata Sandi
+          </label>
+          <div className="relative">
+            <input
+              id="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              required
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Ulangi kata sandi"
+              className="field pr-11"
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              aria-label={showConfirmPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-900"
+            >
+              {showConfirmPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" disabled={loading} className="btn btn-primary btn-lg w-full">
+          {loading ? "Memproses..." : "Daftar"}
+        </button>
+      </form>
+
+      <AuthToast
+        error={error}
+        message={message}
+        onClose={() => {
+          setError(null);
+          setMessage(null);
+        }}
+      />
+    </AuthShell>
   );
 }
