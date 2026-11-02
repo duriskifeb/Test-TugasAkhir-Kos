@@ -100,7 +100,7 @@ export default async function DashboardLayout({
     <div className="flex h-dvh flex-col overflow-hidden bg-gray-50 font-sans text-gray-900 md:flex-row">
       <Sidebar hasBoardingHouse={hasBoardingHouse} role={role} />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <Topbar tenants={allTenants} currentTenantId={currentTenantId} />
+        <Topbar tenants={allTenants} currentTenantId={currentTenantId} role={role} />
         <MobileNav hasBoardingHouse={hasBoardingHouse} role={role} />
         <main className="flex-1 overflow-x-hidden overflow-y-auto">
           {/* Tampilkan UI Verifikasi HANYA jika cabang saat ini beneran belum di verifikasi DAN kita tidak sedang di halaman manajemen Houses */}

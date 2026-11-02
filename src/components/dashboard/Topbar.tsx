@@ -9,10 +9,12 @@ export function Topbar({
   isAdmin = false,
   tenants = [],
   currentTenantId = null,
+  role = "owner",
 }: {
   isAdmin?: boolean;
   tenants?: any[];
   currentTenantId?: string | null;
+  role?: string;
 }) {
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -76,8 +78,20 @@ export function Topbar({
   return (
     <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between gap-4 border-b border-gray-200 bg-white px-4 sm:px-8">
       <div className="flex min-w-0 items-center gap-4">
-        {/* Tenant Switcher (Multi-Cabang) */}
-        {!isAdmin && tenants.length > 0 && (
+        {/* Tampilan Nama Kos Khusus Staf/Pengelola (Statis, 1 Kos yang Ditugaskan) */}
+        {!isAdmin && tenants.length > 0 && role === "staff" && (
+          <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-2 select-none">
+            <span className="flex size-6 items-center justify-center rounded bg-primary-soft text-primary">
+              <Home className="size-3.5" />
+            </span>
+            <span className="max-w-[150px] truncate text-sm font-semibold text-gray-800 sm:max-w-[240px]">
+              {activeTenant?.name || "Kos"}
+            </span>
+          </div>
+        )}
+
+        {/* Tenant Switcher Dropdown (Khusus Pemilik Kos: Multi-Cabang) */}
+        {!isAdmin && tenants.length > 0 && role !== "staff" && (
           <div className="relative" ref={tenantDropdownRef}>
             <button
               onClick={() => setIsTenantDropdownOpen(!isTenantDropdownOpen)}

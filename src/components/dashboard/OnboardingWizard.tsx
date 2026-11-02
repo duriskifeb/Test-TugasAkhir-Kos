@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Building2, Check, Loader2 } from "lucide-react";
 import { setupBoardingHouse } from "@/app/(dashboard)/dashboard/actions";
 import { createClient } from "@/lib/supabase/client";
+import { removeSkuDocument, uploadSkuDocument } from "@/lib/sku-document";
 import { StepDataKos } from "./onboarding/StepDataKos";
 import { StepKamar } from "./onboarding/StepKamar";
 import { StepFotoFasilitas } from "./onboarding/StepFotoFasilitas";
@@ -95,17 +96,23 @@ export function OnboardingWizard({ isOpen, onClose }: { isOpen: boolean; onClose
     setSubmitError(null);
     const supabase = createClient();
     const uploaded: string[] = [];
+    let uploadedSkuDocument: string | null = null;
 
     try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Sesi Anda berakhir. Silakan masuk lagi.");
+
+      const skuFile = form.skuDocument;
+      if (!skuFile) throw new Error("Bukti SKU wajib diunggah.");
+      setProgress("Mengunggah bukti SKU...");
+      uploadedSkuDocument = await uploadSkuDocument(supabase, user.id, skuFile);
+
       const files = [...form.photos.building, ...form.photos.common, ...form.photos.street];
       const urls: string[] = [];
 
       if (files.length) {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) throw new Error("Sesi Anda berakhir. Silakan masuk lagi.");
-
         for (const [i, file] of files.entries()) {
           setProgress(`Mengunggah foto ${i + 1} dari ${files.length}...`);
           // Foto sudah digambar ulang menjadi JPEG di langkah 3. Nama berkas dibuat sendiri, bukan dari nama kiriman,
@@ -119,10 +126,11 @@ export function OnboardingWizard({ isOpen, onClose }: { isOpen: boolean; onClose
       }
 
       setProgress("Menyimpan data kos...");
-      const result = await setupBoardingHouse(buildPayload(form, urls));
+      const result = await setupBoardingHouse(buildPayload(form, urls, uploadedSkuDocument));
 
       if (result.error) {
         if (uploaded.length) await supabase.storage.from("tenant-assets").remove(uploaded);
+        if (uploadedSkuDocument) await removeSkuDocument(supabase, uploadedSkuDocument);
         setSubmitError(result.error);
         if (/link website/i.test(result.error)) {
           setStep(0);
@@ -134,6 +142,7 @@ export function OnboardingWizard({ isOpen, onClose }: { isOpen: boolean; onClose
       setSavedName(form.name.trim());
     } catch (err) {
       if (uploaded.length) void supabase.storage.from("tenant-assets").remove(uploaded);
+      if (uploadedSkuDocument) void removeSkuDocument(supabase, uploadedSkuDocument);
       setSubmitError(err instanceof Error ? err.message : "Terjadi kesalahan. Silakan coba lagi.");
     } finally {
       setSubmitting(false);

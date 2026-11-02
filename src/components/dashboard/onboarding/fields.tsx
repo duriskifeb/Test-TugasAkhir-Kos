@@ -14,7 +14,7 @@ export function Field({
 }: {
   id: string;
   label: string;
-  hint?: string;
+  hint?: ReactNode;
   error?: string;
   optional?: boolean;
   children: ReactNode;
@@ -25,7 +25,7 @@ export function Field({
         {label}
         {optional && <span className="text-xs font-normal text-gray-600">(opsional)</span>}
       </label>
-      {hint && <p className="mb-1.5 text-xs text-gray-600">{hint}</p>}
+      {hint && <p id={`${id}-hint`} className="mb-1.5 text-xs text-gray-600">{hint}</p>}
       {children}
       {error && (
         <p id={`${id}-error`} role="alert" className="mt-1.5 text-sm font-medium text-red-700">

@@ -35,7 +35,7 @@ const defaultContent = {
 const fontStacks: Record<string, string> = {
   Inter: "var(--font-tenant-inter), ui-sans-serif, system-ui, sans-serif",
   "Plus Jakarta Sans": "var(--font-tenant-jakarta), ui-sans-serif, system-ui, sans-serif",
-  Merriweather: "var(--font-tenant-merriweather), Georgia, serif",
+  Merriweather: "'Merriweather', Georgia, serif",
 };
 
 const DEFAULT_PRIMARY = "#2f5bdc";

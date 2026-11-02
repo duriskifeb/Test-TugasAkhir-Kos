@@ -4,6 +4,8 @@ import {
   missingRequiredGroups,
   parseFacilities,
   roomFacilities,
+  SKU_DOCUMENT_MAX_BYTES,
+  SKU_DOCUMENT_MIME_TYPES,
   type Facilities,
   type KosPayload,
   type PhotoCategoryId,
@@ -15,6 +17,7 @@ export type WizardForm = {
   name: string;
   subdomain: string;
   subdomainTouched: boolean;
+  skuDocument: File | null;
   street: string;
   region: string;
   landmark: string;
@@ -38,6 +41,7 @@ export const initialForm: WizardForm = {
   name: "",
   subdomain: "",
   subdomainTouched: false,
+  skuDocument: null,
   street: "",
   region: "",
   landmark: "",
@@ -57,10 +61,11 @@ export const initialForm: WizardForm = {
 };
 
 /** Menyusun muatan untuk fungsi database dari isian wizard dan alamat foto yang sudah diunggah. */
-export function buildPayload(form: WizardForm, photoUrls: string[]): KosPayload {
+export function buildPayload(form: WizardForm, photoUrls: string[], skuDocumentPath: string): KosPayload {
   return {
     name: form.name.trim(),
     subdomain: form.subdomain,
+    sku_document_path: skuDocumentPath,
     address: `${form.street.trim()}, ${form.region.trim()}`,
     landmark: form.landmark.trim(),
     latitude: form.latitude,
@@ -99,6 +104,12 @@ export function validateStep(form: WizardForm, step: number): Errors {
     if (form.name.trim().length < 3) errors.name = "Nama kos minimal 3 karakter.";
     if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(form.subdomain) || form.subdomain.length < 3) {
       errors.subdomain = "Link website minimal 3 karakter: huruf kecil, angka, dan tanda hubung.";
+    }
+    if (!form.skuDocument) errors.skuDocument = "Bukti SKU wajib diunggah.";
+    else if (!SKU_DOCUMENT_MIME_TYPES.some((type) => type === form.skuDocument?.type)) {
+      errors.skuDocument = "Bukti SKU harus berupa PDF, JPG, atau PNG.";
+    } else if (form.skuDocument.size > SKU_DOCUMENT_MAX_BYTES) {
+      errors.skuDocument = "Ukuran bukti SKU maksimal 5 MB.";
     }
     if (!form.street.trim()) errors.street = "Alamat jalan wajib diisi.";
     if (!form.region.trim()) errors.region = "Kelurahan, kecamatan, dan kota wajib diisi.";

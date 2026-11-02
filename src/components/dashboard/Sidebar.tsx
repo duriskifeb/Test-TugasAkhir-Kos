@@ -25,7 +25,7 @@ const allNavItems: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, showFor: ["owner", "staff"] },
 
   // Khusus Pemilik
-  { name: "Daftarkan Kos", href: "/dashboard/houses", icon: Home, showFor: ["owner"] },
+  { name: "Manajemen Cabang", href: "/dashboard/houses", icon: Home, showFor: ["owner"] },
   { name: "Kelola Data Kamar & Harga", href: "/dashboard/rooms", icon: BedDouble, showFor: ["owner"] },
   { name: "Lihat Laporan Keuangan", href: "/dashboard/financial-report", icon: LineChart, showFor: ["owner"] },
   { name: "Kelola Akun Staf", href: "/dashboard/staff", icon: UserCog, showFor: ["owner"] },
@@ -92,7 +92,6 @@ export function Sidebar({
         >
           <item.icon className={`size-[18px] shrink-0 ${isCurrent ? "" : "opacity-60"}`} />
           <span className="flex-1">{item.name}</span>
-          {isCurrent && <span aria-hidden className="size-2 rotate-45 rounded-[2px] bg-primary" />}
         </div>
       );
     }
@@ -110,7 +109,6 @@ export function Sidebar({
       >
         <item.icon className="size-[18px] shrink-0" />
         <span className="flex-1">{item.name}</span>
-        {isActive && <span aria-hidden className="size-2 rotate-45 rounded-[2px] bg-primary" />}
       </Link>
     );
   };

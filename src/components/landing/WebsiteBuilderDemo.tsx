@@ -19,7 +19,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { inter, jakarta, merriweather } from "./builderFonts";
+import { fontStacks } from "./builderFonts";
 
 // Contoh interaktif Website Builder dengan opsi yang sama seperti builder asli.
 // Hanya ilustrasi: tidak menyimpan apa pun dan kembali ke awal saat halaman dimuat ulang.
@@ -35,9 +35,9 @@ const styles: { value: TemplateStyle; label: string }[] = [
 ];
 
 const fonts: { value: FontName; label: string; family: string }[] = [
-  { value: "Inter", label: "Inter", family: inter.style.fontFamily },
-  { value: "Plus Jakarta Sans", label: "Plus Jakarta Sans", family: jakarta.style.fontFamily },
-  { value: "Merriweather", label: "Merriweather", family: merriweather.style.fontFamily },
+  { value: "Inter", label: "Inter", family: fontStacks["Inter"] },
+  { value: "Plus Jakarta Sans", label: "Plus Jakarta Sans", family: fontStacks["Plus Jakarta Sans"] },
+  { value: "Merriweather", label: "Merriweather", family: fontStacks["Merriweather"] },
 ];
 
 const swatches = [

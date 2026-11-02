@@ -16,6 +16,16 @@ export async function setupBoardingHouse(payload: KosPayload): Promise<{ error?:
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sesi Anda berakhir. Silakan masuk lagi." };
 
+  const { error: documentSchemaError } = await supabase
+    .from("tenants")
+    .select("sku_document_path")
+    .limit(0);
+
+  if (documentSchemaError) {
+    console.error("Kolom bukti SKU belum tersedia:", documentSchemaError);
+    return { error: "Fitur bukti SKU belum siap. Jalankan migrasi database terbaru sebelum mendaftarkan kos." };
+  }
+
   const { error } = await supabase.rpc("setup_boarding_house", { p_data: payload as unknown as Json });
 
   if (error) {

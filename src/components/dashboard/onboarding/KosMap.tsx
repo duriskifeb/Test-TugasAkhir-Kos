@@ -9,9 +9,9 @@ import { reversePlace, searchPlaces, type Place, type SearchResult } from "@/lib
 // Peta memakai Leaflet dan ubin OpenStreetMap. Saran lokasi muncul sambil mengetik (Photon, data OpenStreetMap).
 // Layanan luar hanya dipanggil dari src/lib/geocode.ts.
 
-export type PickedPlace = { lat: number; lng: number; street: string; region: string; fromSearch: boolean };
+export type PickedPlace = { lat: number; lng: number; street: string; region: string };
 
-type PinOptions = { lookup: boolean; from?: Place; override?: boolean };
+type PinOptions = { lookup: boolean; from?: Place };
 type Status = "idle" | "loading" | "empty" | "error";
 
 const INDONESIA: [number, number] = [-2.5, 118];
@@ -73,7 +73,7 @@ export function KosMap({
       const icon = L.divIcon({ className: "", html: pinHtml, iconSize: [30, 30], iconAnchor: [15, 30] });
 
       // Menaruh pin, memusatkan peta, lalu mengisi alamat dari hasil pilihan atau dari titik itu.
-      placePin.current = async (lat, lng, { lookup, from, override }) => {
+      placePin.current = async (lat, lng, { lookup, from }) => {
         if (!map) return;
         if (markerRef.current) markerRef.current.setLatLng([lat, lng]);
         else {
@@ -87,13 +87,15 @@ export function KosMap({
         map.setView([lat, lng], Math.max(map.getZoom(), 17));
 
         let found = { street: from?.street ?? "", region: from?.region ?? "" };
-        if (lookup && !from) {
-          const seq = ++reverseSeq.current;
+        let seq: number | null = null;
+        if (lookup) {
+          seq = ++reverseSeq.current;
           setBusy(true);
+          pickRef.current({ lat, lng, ...found });
           try {
             const place = await reversePlace(lat, lng);
             if (seq !== reverseSeq.current) return; // ada titik yang lebih baru, abaikan hasil lama
-            found = { street: place?.street ?? "", region: place?.region ?? "" };
+            if (place) found = { street: place.street, region: place.region };
             setMessage(place ? null : "Alamat di titik ini tidak ditemukan. Isi alamat secara manual.");
           } catch {
             if (seq !== reverseSeq.current) return;
@@ -102,7 +104,7 @@ export function KosMap({
             if (seq === reverseSeq.current) setBusy(false);
           }
         }
-        pickRef.current({ lat, lng, street: found.street, region: found.region, fromSearch: !!from || !!override });
+        if (lookup || from) pickRef.current({ lat, lng, street: found.street, region: found.region });
       };
 
       if (latitude != null && longitude != null) void placePin.current(latitude, longitude, { lookup: false });
@@ -176,7 +178,7 @@ export function KosMap({
     setResults([]);
     setStatus("idle");
     setMessage(null);
-    void placePin.current(place.lat, place.lng, { lookup: false, from: place });
+    void placePin.current(place.lat, place.lng, { lookup: true, from: place });
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -212,7 +214,7 @@ export function KosMap({
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setLocating(false);
-        void placePin.current(pos.coords.latitude, pos.coords.longitude, { lookup: true, override: true });
+        void placePin.current(pos.coords.latitude, pos.coords.longitude, { lookup: true });
       },
       (err) => {
         setLocating(false);

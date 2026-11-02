@@ -67,7 +67,7 @@ export default function RentersActivePage() {
                 <ShieldAlert className="w-8 h-8 text-red-600" />
              </div>
           </div>
-          <h2 className="text-xl font-bold text-center text-gray-900 mb-2">Verifikasi Keamanan (Include Login)</h2>
+          <h2 className="text-xl font-bold text-center text-gray-900 mb-2">Verifikasi Keamanan</h2>
           <p className="text-sm text-gray-500 text-center mb-6">
             Data penyewa bersifat rahasia. Sesuai prosedur sistem, Anda harus memasukkan ulang kata sandi sebelum mengakses halaman ini.
           </p>

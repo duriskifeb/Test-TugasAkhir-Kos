@@ -2,6 +2,35 @@
 
 import { createClient } from "@/lib/supabase/server";
 
+export type TenantSummary = {
+  id: string;
+  name: string;
+  subdomain: string | null;
+  address: string | null;
+  status: string;
+  created_at: string;
+};
+
+export async function getOwnerTenants(): Promise<TenantSummary[]> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return [];
+
+  const { data: tenants, error } = await supabase
+    .from("tenants")
+    .select("id, name, subdomain, address, status, created_at")
+    .eq("owner_id", user.id)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching tenants:", error);
+    return [];
+  }
+
+  return (tenants as TenantSummary[]) || [];
+}
+
 export async function checkVerificationStatus() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

@@ -54,6 +54,19 @@ export default async function AdminVerifikasiDetailPage({ params }: { params: Pr
     .maybeSingle();
   if (!tenant) notFound();
 
+  let skuDocumentUrl: string | null = null;
+  let skuDocumentError = false;
+  if (tenant.sku_document_path) {
+    const { data, error } = await supabase.storage
+      .from("tenant-documents")
+      .createSignedUrl(tenant.sku_document_path, 300);
+    if (error) {
+      console.error("Gagal membuat tautan bukti SKU:", error);
+      skuDocumentError = true;
+    }
+    else skuDocumentUrl = data.signedUrl;
+  }
+
   const [{ data: rooms }, { data: gallery }] = await Promise.all([
     supabase
       .from("rooms")
@@ -147,6 +160,29 @@ export default async function AdminVerifikasiDetailPage({ params }: { params: Pr
             )}
           </Row>
         </dl>
+      </Card>
+
+      <Card title="Bukti Surat Keterangan Usaha (SKU)">
+        {skuDocumentUrl ? (
+          <a
+            href={skuDocumentUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+          >
+            <ExternalLink className="size-4" />
+            Buka bukti SKU
+          </a>
+        ) : skuDocumentError ? (
+          <p role="alert" className="text-sm text-red-700">
+            Bukti SKU terdaftar, tetapi tautan dokumen gagal dibuat. Muat ulang halaman atau hubungi dukungan teknis.
+          </p>
+        ) : (
+          <p className="text-sm text-gray-600">Bukti SKU belum tersedia.</p>
+        )}
+        <p className="mt-2 text-xs text-gray-600">
+          Periksa apakah dokumen memuat perincian, tanda tangan desa, dan stempel desa.
+        </p>
       </Card>
 
       <Card title="Kamar">

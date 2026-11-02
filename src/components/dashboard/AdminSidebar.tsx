@@ -38,7 +38,6 @@ export function AdminSidebar() {
               >
                 <item.icon className="size-[18px] shrink-0" />
                 <span className="flex-1">{item.name}</span>
-                {isActive && <span aria-hidden className="size-2 rotate-45 rounded-[2px] bg-primary" />}
               </Link>
             );
           })}

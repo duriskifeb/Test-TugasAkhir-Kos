@@ -228,6 +228,8 @@ export const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 export const PHOTO_MAX_SIDE = 1600;
 /** Format foto yang diterima, sama dengan yang diizinkan bucket penyimpanan. */
 export const PHOTO_ACCEPT = "image/jpeg,image/png,image/webp";
+export const SKU_DOCUMENT_MAX_BYTES = 5 * 1024 * 1024;
+export const SKU_DOCUMENT_MIME_TYPES = ["application/pdf", "image/jpeg", "image/png"] as const;
 
 // ---------------------------------------------------------------- ukuran kamar
 
@@ -247,6 +249,7 @@ export const formatSize = (length: number, width: number) =>
 export type KosPayload = {
   name: string;
   subdomain: string;
+  sku_document_path: string;
   address: string;
   landmark: string;
   latitude: number | null;

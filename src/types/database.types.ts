@@ -406,6 +406,7 @@ export type Database = {
       tenants: {
         Row: {
           address: string | null
+          sku_document_path: string | null
           landmark: string | null
           latitude: number | null
           longitude: number | null
@@ -424,6 +425,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          sku_document_path?: string | null
           landmark?: string | null
           latitude?: number | null
           longitude?: number | null
@@ -442,6 +444,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          sku_document_path?: string | null
           landmark?: string | null
           latitude?: number | null
           longitude?: number | null
