@@ -15,7 +15,15 @@ import { buildPayload, initialForm, stepTitles, validateStep, type Errors, type 
 const LAST_STEP = stepTitles.length - 1;
 
 /** Wizard tiga langkah untuk mendaftarkan kos pertama: Data Kos, Kamar Kos, lalu Foto & Fasilitas. */
-export function OnboardingWizard({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+export function OnboardingWizard({
+  isOpen,
+  inline = false,
+  onClose,
+}: {
+  isOpen: boolean;
+  inline?: boolean;
+  onClose: () => void;
+}) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<WizardForm>(initialForm);
@@ -156,13 +164,21 @@ export function OnboardingWizard({ isOpen, onClose }: { isOpen: boolean; onClose
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
+      role={inline ? "region" : "dialog"}
+      aria-modal={inline ? undefined : "true"}
       aria-labelledby="onboarding-title"
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-900/30 p-3 text-left sm:p-6"
+      className={
+        inline
+          ? "mx-auto w-full text-left"
+          : "fixed inset-0 z-[9999] flex items-center justify-center bg-gray-900/30 p-3 text-left sm:p-6"
+      }
     >
       {/* overflow-clip (bukan hidden) agar fokus pada isian tidak menggeser kepala modal ke atas */}
-      <div className="relative flex max-h-[94dvh] w-full max-w-2xl flex-col overflow-clip rounded-xl bg-white shadow-pop">
+      <div
+        className={`relative mx-auto flex w-full max-w-2xl flex-col overflow-clip rounded-xl bg-white shadow-pop ${
+          inline ? "" : "max-h-[94dvh]"
+        }`}
+      >
         {/* Kepala: judul dan penanda langkah, tidak ikut digulir */}
         <div className="shrink-0 border-b border-gray-200 bg-primary-soft px-5 py-5 sm:px-8">
           <div className="flex items-start gap-4">

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { AuthShell, AuthToast } from "@/components/ui/AuthShell";
@@ -10,6 +10,7 @@ import { AuthShell, AuthToast } from "@/components/ui/AuthShell";
 export default function ResetPasswordPage() {
   const router = useRouter();
   const [status, setStatus] = useState<"checking" | "ready" | "invalid">("checking");
+  const [inviteActivationError, setInviteActivationError] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -17,14 +18,19 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   // Tautan dari email membawa kode pemulihan di URL. Supabase menukarnya menjadi sesi
   // saat klien dibuat, jadi cukup menunggu sesi itu ada.
   useEffect(() => {
     let active = true;
+    const hasInviteActivationError =
+      new URLSearchParams(window.location.search).get("invite_error") === "activation";
     supabase.auth.getSession().then(({ data }) => {
-      if (active) setStatus(data.session ? "ready" : "invalid");
+      if (active) {
+        setStatus(data.session ? "ready" : "invalid");
+        setInviteActivationError(hasInviteActivationError);
+      }
     });
     return () => {
       active = false;
@@ -49,12 +55,12 @@ export default function ResetPasswordPage() {
       const { error: updateError } = await supabase.auth.updateUser({ password });
       if (updateError) throw updateError;
 
-      // Keluar dulu supaya halaman masuk tidak langsung mengalihkan ke dashboard.
-      await supabase.auth.signOut();
+      const { error: signOutError } = await supabase.auth.signOut();
+      if (signOutError) throw signOutError;
       setMessage("Kata sandi berhasil diubah. Mengalihkan ke halaman masuk...");
       setTimeout(() => router.push("/login"), 1500);
-    } catch (err: any) {
-      setError(err?.message || "Terjadi kesalahan yang tidak terduga.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan yang tidak terduga.");
     } finally {
       setLoading(false);
     }
@@ -82,10 +88,18 @@ export default function ResetPasswordPage() {
       {status === "invalid" && (
         <div role="alert" className="rounded-xl border border-gray-200 bg-gray-50 p-5 text-center">
           <p className="font-semibold text-gray-900">Tautan tidak valid atau sudah kedaluwarsa</p>
-          <p className="mt-1 text-sm text-gray-600">Minta tautan baru untuk mengatur ulang kata sandi Anda.</p>
+          <p className="mt-1 text-sm text-gray-600">
+            Untuk undangan pengelola, minta pemilik kos mengirim ulang undangan. Untuk mengatur ulang kata sandi, minta tautan baru.
+          </p>
           <Link href="/lupa-sandi" className="btn btn-primary mt-4">
             Minta tautan baru
           </Link>
+        </div>
+      )}
+
+      {inviteActivationError && (
+        <div role="alert" className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          Email sudah diverifikasi, tetapi akses pengelola belum aktif. Minta administrator menerapkan migrasi database terbaru sebelum melanjutkan.
         </div>
       )}
 

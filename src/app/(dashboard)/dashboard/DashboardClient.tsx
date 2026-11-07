@@ -66,12 +66,20 @@ export function DashboardClient({
           Mulai dengan mendaftarkan properti kos Anda. Setelah itu menu di samping terbuka, dan Anda bisa mengelola
           kamar, laporan, staf, dan website kos.
         </p>
-        <button onClick={() => setIsWizardOpen(true)} className="btn btn-primary btn-lg">
-          <PlusSquare className="size-5" />
-          Daftarkan Kos Pertama Anda
-        </button>
-
-        <OnboardingWizard isOpen={isWizardOpen} onClose={() => setIsWizardOpen(false)} />
+        {isWizardOpen ? (
+          <div className="w-full text-left">
+            <OnboardingWizard
+              isOpen
+              inline
+              onClose={() => setIsWizardOpen(false)}
+            />
+          </div>
+        ) : (
+          <button onClick={() => setIsWizardOpen(true)} className="btn btn-primary btn-lg">
+            <PlusSquare className="size-5" />
+            Daftarkan Kos Pertama Anda
+          </button>
+        )}
       </div>
     );
   }

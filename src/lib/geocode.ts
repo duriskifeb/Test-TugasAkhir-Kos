@@ -1,32 +1,21 @@
-// Pencarian lokasi untuk peta pendaftaran kos. Memakai Photon (photon.komoot.io), layanan pencarian
-// berbasis data OpenStreetMap yang mendukung saran sambil mengetik. Nominatim (layanan publik
-// OpenStreetMap) tidak dipakai karena melarang pencarian sambil mengetik.
-//
-// Semua pemanggilan ke layanan luar ada di berkas ini, jadi penyedia mudah diganti.
-
 const PHOTON = "https://photon.komoot.io";
-/** Membatasi hasil ke Indonesia (minLon,minLat,maxLon,maxLat). */
 const INDONESIA_BBOX = "95,-11.2,141.1,6.2";
 
 export type Place = {
   lat: number;
   lng: number;
-  /** Nama utama untuk daftar saran. */
   title: string;
-  /** Keterangan wilayah untuk daftar saran. */
   subtitle: string;
-  /** Nama jalan dan nomor, kosong bila hasilnya berupa wilayah. */
   street: string;
-  /** Kelurahan, kecamatan, kota/kabupaten, provinsi, kode pos. */
   region: string;
+  hasRtRw: boolean;
 };
 
-type Feature = { geometry?: { coordinates?: unknown }; properties?: Record<string, string | undefined> };
+type PhotonFeature = {
+  geometry?: { coordinates?: unknown };
+  properties?: Record<string, string | undefined>;
+};
 
-// RT/RW muncul sebagai "nama wilayah" di data (misalnya "RW 04") dan bukan bagian dari alamat wilayah.
-const isUnit = (s: string) => /^R[TW]\s*\d+/i.test(s.trim());
-
-// Data kadang memuat nama provinsi berbahasa Inggris, terutama di dalam rangkaian "city".
 const PROVINCE_ID: Record<string, string> = {
   "east java": "Jawa Timur",
   "central java": "Jawa Tengah",
@@ -58,109 +47,139 @@ const PROVINCE_ID: Record<string, string> = {
   "south papua": "Papua Selatan",
   "southwest papua": "Papua Barat Daya",
 };
-const localize = (s: string) => PROVINCE_ID[s.trim().toLowerCase()] ?? s;
 
-const unique = (items: (string | undefined)[]) => {
+const localize = (value: string) => PROVINCE_ID[value.trim().toLowerCase()] ?? value;
+const isUnit = (value: string) => /^(?:R[TW]\s*\.?\s*\d+[A-Z]?\s*[\/,]?\s*)+$/i.test(value.trim());
+
+function unique(values: (string | undefined)[]) {
   const seen = new Set<string>();
-  const out: string[] = [];
-  for (const item of items) {
-    const raw = item?.trim();
-    const value = raw ? localize(raw) : undefined;
-    if (!value || isUnit(value) || seen.has(value.toLowerCase())) continue;
-    seen.add(value.toLowerCase());
-    out.push(value);
+  return values.flatMap((raw) => {
+    const value = raw?.trim();
+    const localized = value ? localize(value) : undefined;
+    const key = localized?.toLowerCase();
+    if (!localized || isUnit(localized) || !key || seen.has(key)) return [];
+    seen.add(key);
+    return [localized];
+  });
+}
+
+function extractRtRw(values: (string | undefined)[]) {
+  const units = values.flatMap((value) =>
+    [...(value?.matchAll(/\bR[TW]\s*\.?\s*\d+[A-Z]?\b/gi) ?? [])].map((match) =>
+      match[0].replace(/\s+/g, " ").trim(),
+    ),
+  );
+  return [...new Set(units.map((unit) => unit.toLowerCase()))].map(
+    (unit) => units.find((candidate) => candidate.toLowerCase() === unit)!,
+  );
+}
+
+export function toPlace(feature: PhotonFeature): Place | null {
+  const coordinates = feature.geometry?.coordinates;
+  if (!Array.isArray(coordinates) || typeof coordinates[0] !== "number" || typeof coordinates[1] !== "number") {
+    return null;
   }
-  return out;
-};
 
-// Ruas dan jembatan jalan tol bukan lokasi kos, tetapi sering muncul paling atas untuk nama kecamatan.
-const isTollRoad = (f: Feature) => {
-  const p = f.properties ?? {};
-  return (p.osm_key === "highway" && /^motorway/.test(p.osm_value ?? "")) || /\bJalan Tol\b/i.test(p.name ?? "");
-};
+  const [lng, lat] = coordinates as [number, number];
+  const properties = feature.properties ?? {};
+  const cityParts = (properties.city ?? "").split(",").map((part) => part.trim());
+  if (cityParts.length > 2 && properties.state) cityParts.pop();
 
-/** Mengubah satu hasil Photon menjadi tempat dengan alamat yang siap diisikan ke form. */
-export function toPlace(feature: Feature): Place | null {
-  const coords = feature.geometry?.coordinates;
-  if (!Array.isArray(coords) || typeof coords[0] !== "number" || typeof coords[1] !== "number") return null;
-  const [lng, lat] = coords as [number, number];
-  const p = feature.properties ?? {};
+  const isArea = ["district", "locality", "city", "county", "state"].includes(properties.type ?? "");
+  const areaParts = unique([
+    isArea ? properties.name : undefined,
+    properties.locality,
+    properties.district,
+    ...cityParts,
+    properties.county,
+    properties.state,
+  ]);
+  const streetName = properties.type === "street" ? properties.name : properties.street;
+  const units = extractRtRw([
+    properties.name,
+    properties.locality,
+    properties.district,
+    ...cityParts,
+    properties.county,
+    properties.state,
+  ]);
+  const street = [...[streetName, properties.housenumber].filter(Boolean), ...units].join(", ");
+  const title = [properties.name, streetName, areaParts[0]]
+    .find((value) => value?.trim() && !isUnit(value))
+    ?.trim();
 
-  // "city" kadang berisi rangkaian wilayah dengan provinsi berbahasa Inggris di ujung
-  // ("Jagir, Wonokromo, Surabaya, East Java"). Ambil bagian wilayahnya saja.
-  const cityParts = (p.city ?? "").split(",").map((s) => s.trim());
-  if (cityParts.length > 2 && p.state) cityParts.pop();
-
-  const isArea = ["district", "locality", "city", "county", "state"].includes(p.type ?? "");
-  const parts = unique([isArea ? p.name : undefined, p.locality, p.district, ...cityParts, p.county, p.state]);
-
-  const streetName = p.type === "street" ? p.name : p.street;
-  const street = [streetName, p.housenumber].filter(Boolean).join(" ").trim();
-
-  const title = (p.name ?? streetName ?? parts[0] ?? "").trim();
   if (!title) return null;
-  const subtitle = parts.filter((part) => part.toLowerCase() !== title.toLowerCase()).join(", ");
-
-  return { lat, lng, title, subtitle, street, region: unique([...parts, p.postcode]).join(", ") };
+  return {
+    lat,
+    lng,
+    title,
+    subtitle: areaParts.filter((part) => part.toLowerCase() !== title.toLowerCase()).join(", "),
+    street,
+    region: unique([...areaParts, properties.postcode]).join(", "),
+    hasRtRw: units.length > 0,
+  };
 }
 
 type SearchOptions = { signal?: AbortSignal; near?: { lat: number; lng: number } };
 
-async function searchOnce(query: string, options: SearchOptions): Promise<Place[]> {
+export type SearchResult = { places: Place[]; usedQuery: string };
+
+async function searchOnce(query: string, options: SearchOptions) {
   const params = new URLSearchParams({ q: query, limit: "10", bbox: INDONESIA_BBOX });
   if (options.near) {
     params.set("lat", String(options.near.lat));
     params.set("lon", String(options.near.lng));
   }
-  const res = await fetch(`${PHOTON}/api/?${params}`, { signal: options.signal });
-  if (!res.ok) throw new Error(`Pencarian lokasi gagal (${res.status})`);
-  const data = (await res.json()) as { features?: Feature[] };
+  const response = await fetch(`${PHOTON}/api/?${params}`, { signal: options.signal });
+  if (!response.ok) throw new Error(`Pencarian lokasi gagal (${response.status}).`);
 
+  const data = (await response.json()) as { features?: PhotonFeature[] };
   const seen = new Set<string>();
-  const places: Place[] = [];
-  for (const feature of data.features ?? []) {
-    if (isTollRoad(feature)) continue;
+  return (data.features ?? []).flatMap((feature) => {
+    const properties = feature.properties ?? {};
+    if (
+      (properties.osm_key === "highway" && /^motorway/.test(properties.osm_value ?? ""))
+      || /\bJalan Tol\b/i.test(properties.name ?? "")
+    ) return [];
+
     const place = toPlace(feature);
     const key = place && `${place.title}|${place.subtitle}`.toLowerCase();
-    if (!place || !key || seen.has(key)) continue;
+    if (!place || !key || seen.has(key)) return [];
     seen.add(key);
-    places.push(place);
-  }
-  return places;
+    return [place];
+  });
 }
 
-export type SearchResult = { places: Place[]; /** Kata kunci yang akhirnya dipakai. Bisa lebih pendek dari yang diketik. */ usedQuery: string };
-
-/**
- * Saran lokasi untuk kata kunci. `near` (pusat peta) membuat hasil di sekitarnya diutamakan.
- * Gabungan beberapa kata sering tidak menemukan apa pun ("Karangrejo Gempol"), jadi bila hasilnya kosong
- * dicoba lagi dengan kata-kata awal saja, paling banyak dua kali.
- */
 export async function searchPlaces(query: string, options: SearchOptions = {}): Promise<SearchResult> {
   const words = query.trim().split(/\s+/);
   let usedQuery = words.join(" ");
   let places = await searchOnce(usedQuery, options);
 
-  for (let n = words.length - 1; places.length === 0 && n >= 1 && n >= words.length - 2; n--) {
-    const shorter = words.slice(0, n).join(" ");
+  for (let count = words.length - 1; places.length === 0 && count >= 1 && count >= words.length - 2; count--) {
+    const shorter = words.slice(0, count).join(" ");
     if (shorter.length < 3) break;
     places = await searchOnce(shorter, options);
     if (places.length) {
       usedQuery = shorter;
-      // Kata yang dibuang tetap berguna: hasil yang memuatnya ("Pasuruan") diutamakan.
-      const dropped = words.slice(n).map((w) => w.toLowerCase());
-      const score = (p: Place) => dropped.filter((w) => `${p.subtitle} ${p.region}`.toLowerCase().includes(w)).length;
-      places = places.map((p, i) => ({ p, i, s: score(p) })).sort((a, b) => b.s - a.s || a.i - b.i).map((x) => x.p);
+      const dropped = words.slice(count).map((word) => word.toLowerCase());
+      places = places
+        .map((place, index) => ({
+          place,
+          index,
+          score: dropped.filter((word) => `${place.subtitle} ${place.region}`.toLowerCase().includes(word)).length,
+        }))
+        .sort((a, b) => b.score - a.score || a.index - b.index)
+        .map(({ place }) => place);
     }
   }
+
   return { places: places.slice(0, 5), usedQuery };
 }
 
-/** Alamat dari sebuah titik di peta. Mengembalikan null bila tidak ada data di titik itu. */
-export async function reversePlace(lat: number, lng: number, signal?: AbortSignal): Promise<Place | null> {
-  const res = await fetch(`${PHOTON}/reverse?lat=${lat}&lon=${lng}&limit=1`, { signal });
-  if (!res.ok) throw new Error(`Alamat titik gagal dimuat (${res.status})`);
-  const data = (await res.json()) as { features?: Feature[] };
-  const first = data.features?.[0];
-  return first ? toPlace(first) : null;
+export async function reversePlace(lat: number, lng: number, signal?: AbortSignal) {
+  const params = new URLSearchParams({ lat: String(lat), lon: String(lng), limit: "1" });
+  const response = await fetch(`${PHOTON}/reverse?${params}`, { signal });
+  if (!response.ok) throw new Error(`Alamat pada titik peta gagal dimuat (${response.status}).`);
+  const data = (await response.json()) as { features?: PhotonFeature[] };
+  return data.features?.[0] ? toPlace(data.features[0]) : null;
 }

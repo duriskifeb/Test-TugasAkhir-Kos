@@ -27,6 +27,7 @@ export default async function DashboardPage() {
       .select("tenant_id")
       .eq("email", user.email ?? "")
       .eq("status", "active")
+      .limit(1)
       .maybeSingle();
       
     if (staffData) {

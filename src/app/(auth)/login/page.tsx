@@ -5,6 +5,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getAuthErrorMessage } from "@/lib/auth-error-message";
 import { AuthShell, AuthToast } from "@/components/ui/AuthShell";
 
 export default function LoginPage() {
@@ -26,16 +27,16 @@ export default function LoginPage() {
 
     try {
       const { data: signInData, error: signInError } =
-        await supabase.auth.signInWithPassword({ email, password });
+        await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
 
-      if (signInError) throw signInError;
+      if (signInError) {
+        setError(getAuthErrorMessage(signInError, "login"));
+        return;
+      }
 
       let redirectUrl = "/dashboard";
       if (signInData.user) {
-        // PERBAIKAN: Ambil data profile TANPA menggunakan filter yang bisa diblok RLS 
-        // Menggunakan "as any" untuk sementara mem-bypass masalah Typescript pada auth meta
-        const userMeta = signInData.user.user_metadata as any;
-        const userRoleMeta = userMeta?.role;
+        const userRoleMeta = signInData.user.user_metadata?.role;
 
         const { data: profile } = await supabase
           .from("profiles")
@@ -43,10 +44,7 @@ export default function LoginPage() {
           .eq("id", signInData.user.id)
           .single();
 
-        // KITA CEK KEDUANYA (dari meta-data saat register DAN dari tabel profile)
         const finalRole = profile?.role || userRoleMeta;
-        
-        console.log("DEBUG ROLE:", finalRole);
 
         if (finalRole === "admin") {
           redirectUrl = "/admin/dashboard";
@@ -61,8 +59,8 @@ export default function LoginPage() {
       setTimeout(() => {
         router.push(redirectUrl);
       }, 1500);
-    } catch (err: any) {
-      setError(err?.message || "Terjadi kesalahan yang tidak terduga.");
+    } catch (err: unknown) {
+      setError(getAuthErrorMessage(err, "login"));
     } finally {
       setLoading(false);
     }

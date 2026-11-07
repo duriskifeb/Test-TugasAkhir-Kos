@@ -6,18 +6,16 @@ import type { Map as LeafletMap, Marker } from "leaflet";
 import { Loader2, LocateFixed, Search } from "lucide-react";
 import { reversePlace, searchPlaces, type Place, type SearchResult } from "@/lib/geocode";
 
-// Peta memakai Leaflet dan ubin OpenStreetMap. Saran lokasi muncul sambil mengetik (Photon, data OpenStreetMap).
-// Layanan luar hanya dipanggil dari src/lib/geocode.ts.
-
 export type PickedPlace = { lat: number; lng: number; street: string; region: string };
 
-type PinOptions = { lookup: boolean; from?: Place };
+type PinOptions = { lookup: boolean; from?: Place; accuracy?: number };
 type Status = "idle" | "loading" | "empty" | "error";
-
 const INDONESIA: [number, number] = [-2.5, 118];
 const DEBOUNCE_MS = 350;
+const GPS_ACCURACY_WARNING_METERS = 100;
+const GPS_TARGET_ACCURACY_METERS = 20;
+const GPS_SAMPLE_WINDOW_MS = 12000;
 const LISTBOX_ID = "kos-map-suggestions";
-
 const pinHtml =
   '<div style="width:30px;height:30px;border-radius:50% 50% 50% 0;background:#2f5bdc;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 2px 6px rgba(28,37,65,.35)"></div>';
 
@@ -53,62 +51,90 @@ export function KosMap({
     pickRef.current = onPick;
   }, [onPick]);
 
-  // ---------------------------------------------------------------- peta
   useEffect(() => {
     let cancelled = false;
     let map: LeafletMap | null = null;
 
-    (async () => {
-      const L = (await import("leaflet")).default;
-      if (cancelled || !containerRef.current) return;
+    void (async () => {
+      try {
+        const L = (await import("leaflet")).default;
+        if (cancelled || !containerRef.current) return;
 
-      const start: [number, number] = latitude != null && longitude != null ? [latitude, longitude] : INDONESIA;
-      map = L.map(containerRef.current, { scrollWheelZoom: false }).setView(start, latitude != null ? 17 : 5);
-      mapRef.current = map;
-      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      }).addTo(map);
+        const start: [number, number] =
+          latitude != null && longitude != null ? [latitude, longitude] : INDONESIA;
+        map = L.map(containerRef.current, { scrollWheelZoom: false }).setView(start, latitude != null ? 19 : 5);
+        mapRef.current = map;
+        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        }).addTo(map);
+        const icon = L.divIcon({ className: "", html: pinHtml, iconSize: [30, 30], iconAnchor: [15, 30] });
 
-      const icon = L.divIcon({ className: "", html: pinHtml, iconSize: [30, 30], iconAnchor: [15, 30] });
-
-      // Menaruh pin, memusatkan peta, lalu mengisi alamat dari hasil pilihan atau dari titik itu.
-      placePin.current = async (lat, lng, { lookup, from }) => {
-        if (!map) return;
-        if (markerRef.current) markerRef.current.setLatLng([lat, lng]);
-        else {
-          const marker = L.marker([lat, lng], { icon, draggable: true, keyboard: false, alt: "Lokasi kos" }).addTo(map);
-          marker.on("dragend", () => {
-            const p = marker.getLatLng();
-            void placePin.current(p.lat, p.lng, { lookup: true });
-          });
-          markerRef.current = marker;
-        }
-        map.setView([lat, lng], Math.max(map.getZoom(), 17));
-
-        let found = { street: from?.street ?? "", region: from?.region ?? "" };
-        let seq: number | null = null;
-        if (lookup) {
-          seq = ++reverseSeq.current;
-          setBusy(true);
-          pickRef.current({ lat, lng, ...found });
-          try {
-            const place = await reversePlace(lat, lng);
-            if (seq !== reverseSeq.current) return; // ada titik yang lebih baru, abaikan hasil lama
-            if (place) found = { street: place.street, region: place.region };
-            setMessage(place ? null : "Alamat di titik ini tidak ditemukan. Isi alamat secara manual.");
-          } catch {
-            if (seq !== reverseSeq.current) return;
-            setMessage("Alamat dari titik ini tidak bisa dimuat. Isi kolom alamat secara manual.");
-          } finally {
-            if (seq === reverseSeq.current) setBusy(false);
+        placePin.current = async (lat, lng, { lookup, from, accuracy }) => {
+          if (!map) return;
+          if (markerRef.current) markerRef.current.setLatLng([lat, lng]);
+          else {
+            const marker = L.marker([lat, lng], {
+              icon,
+              draggable: true,
+              keyboard: false,
+              alt: "Lokasi kos",
+            }).addTo(map);
+            marker.on("dragend", () => {
+              const position = marker.getLatLng();
+              void placePin.current(position.lat, position.lng, { lookup: true });
+            });
+            markerRef.current = marker;
           }
-        }
-        if (lookup || from) pickRef.current({ lat, lng, street: found.street, region: found.region });
-      };
+          map.setView([lat, lng], Math.max(map.getZoom(), 19));
 
-      if (latitude != null && longitude != null) void placePin.current(latitude, longitude, { lookup: false });
-      map.on("click", (e) => void placePin.current(e.latlng.lat, e.latlng.lng, { lookup: true }));
+          let found = { street: from?.street ?? "", region: from?.region ?? "", hasRtRw: from?.hasRtRw ?? false };
+          if (lookup) {
+            const sequence = ++reverseSeq.current;
+            setBusy(true);
+            pickRef.current({ lat, lng, street: found.street, region: found.region });
+            let addressError: string | null = null;
+            try {
+              const place = await reversePlace(lat, lng);
+              if (sequence !== reverseSeq.current) return;
+              if (place) found = place;
+              else addressError = "Alamat titik ini tidak ditemukan.";
+            } catch {
+              if (sequence !== reverseSeq.current) return;
+              addressError = "Alamat dari peta gagal dimuat.";
+            } finally {
+              if (sequence === reverseSeq.current) setBusy(false);
+            }
+
+            if (sequence !== reverseSeq.current) return;
+            if (accuracy != null) {
+              const accuracyMessage = accuracy > GPS_ACCURACY_WARNING_METERS
+                ? `Akurasi GPS perangkat sekitar ±${Math.round(accuracy)} m. Geser pin langsung ke bangunan kos agar titik lebih tepat.`
+                : `Akurasi GPS perangkat sekitar ±${Math.round(accuracy)} m. Pastikan pin sudah tepat pada bangunan kos.`;
+              setMessage([addressError, accuracyMessage].filter(Boolean).join(" "));
+            } else {
+              setMessage(
+                addressError
+                  ? `${addressError} Geser pin atau isi alamat manual.`
+                  : found.hasRtRw
+                    ? "Alamat terisi dari data OpenStreetMap. Periksa kembali sebelum melanjutkan."
+                    : "Data peta tidak mencantumkan RT/RW. Lengkapi RT/RW sesuai alamat resmi.",
+              );
+            }
+          }
+
+          if (lookup || from) pickRef.current({ lat, lng, street: found.street, region: found.region });
+        };
+
+        if (latitude != null && longitude != null) {
+          void placePin.current(latitude, longitude, { lookup: false });
+        }
+        map.on("click", (event) => {
+          void placePin.current(event.latlng.lat, event.latlng.lng, { lookup: true });
+        });
+      } catch {
+        if (!cancelled) setMessage("Peta gagal dimuat. Periksa koneksi internet, lalu muat ulang halaman.");
+      }
     })();
 
     return () => {
@@ -117,25 +143,20 @@ export function KosMap({
       mapRef.current = null;
       markerRef.current = null;
     };
-    // Peta dibuat sekali. Posisi awal hanya dipakai saat dibuat.
+    // Peta dibuat sekali. Posisi awal hanya dipakai saat peta pertama dibuat.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ---------------------------------------------------------------- saran sambil mengetik
   useEffect(() => {
     if (skipNextSearch.current) {
       skipNextSearch.current = false;
       return;
     }
-    const q = query.trim();
-    if (q.length < 3) {
-      setResults([]);
-      setStatus("idle");
-      setOpen(false);
-      return;
-    }
 
-    const key = q.toLowerCase();
+    const searchQuery = query.trim();
+    if (searchQuery.length < 3) return;
+
+    const key = searchQuery.toLowerCase();
     const cached = cache.current.get(key);
     if (cached) {
       setResults(cached.places);
@@ -153,18 +174,20 @@ export function KosMap({
       try {
         const map = mapRef.current;
         const center = map && map.getZoom() >= 8 ? map.getCenter() : null;
-        const found = await searchPlaces(q, { signal: controller.signal, near: center ? { lat: center.lat, lng: center.lng } : undefined });
+        const found = await searchPlaces(searchQuery, {
+          signal: controller.signal,
+          near: center ? { lat: center.lat, lng: center.lng } : undefined,
+        });
         cache.current.set(key, found);
         setResults(found.places);
         setUsedQuery(found.usedQuery);
         setStatus(found.places.length ? "idle" : "empty");
         setActive(-1);
-      } catch (err) {
-        if ((err as Error).name !== "AbortError") setStatus("error");
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") setStatus("error");
       }
     }, DEBOUNCE_MS);
 
-    // Mengetik lagi membatalkan permintaan sebelumnya, jadi hasil lama tidak menimpa hasil baru.
     return () => {
       clearTimeout(timer);
       controller.abort();
@@ -181,51 +204,79 @@ export function KosMap({
     void placePin.current(place.lat, place.lng, { lookup: true, from: place });
   }
 
-  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    const n = results.length;
-    if (e.key === "ArrowDown" && n) {
-      e.preventDefault();
-      setOpen(true);
-      setActive((a) => (a + 1) % n);
-    } else if (e.key === "ArrowUp" && n) {
-      e.preventDefault();
-      setOpen(true);
-      setActive((a) => (a <= 0 ? n - 1 : a - 1));
-    } else if (e.key === "Enter") {
-      e.preventDefault(); // Enter di sini tidak boleh mengirim formulir
-      if (open && n) pick(results[active >= 0 ? active : 0]);
-    } else if (e.key === "Escape" && open) {
-      // Menutup saran saja, bukan seluruh wizard. Wizard mendengarkan Esc di document, tempat React juga
-      // memasang pendengarnya, jadi selain stopPropagation perlu preventDefault dan stopImmediatePropagation.
-      e.preventDefault();
-      e.stopPropagation();
-      e.nativeEvent.stopImmediatePropagation();
-      setOpen(false);
-    }
-  }
-
   function locateMe() {
     if (!("geolocation" in navigator)) {
-      setMessage("Peramban Anda tidak mendukung penentuan lokasi. Cari lokasi atau klik peta.");
+      setMessage("Peramban tidak mendukung lokasi. Cari alamat atau klik peta untuk memilih titik.");
       return;
     }
     setLocating(true);
-    setMessage(null);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
+    setMessage("Mencari sinyal GPS terbaik hingga 12 detik. Pastikan izin lokasi aktif dan perangkat berada di area terbuka.");
+
+    let bestPosition: GeolocationPosition | null = null;
+    let watchId: number | null = null;
+    let finished = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    const finish = (error?: GeolocationPositionError) => {
+        if (finished) return;
+        finished = true;
+        if (timeoutId) clearTimeout(timeoutId);
+        if (watchId !== null) navigator.geolocation.clearWatch(watchId);
         setLocating(false);
-        void placePin.current(pos.coords.latitude, pos.coords.longitude, { lookup: true });
-      },
-      (err) => {
-        setLocating(false);
+
+        if (bestPosition) {
+          void placePin.current(bestPosition.coords.latitude, bestPosition.coords.longitude, {
+            lookup: true,
+            accuracy: bestPosition.coords.accuracy,
+          });
+          return;
+        }
+
         setMessage(
-          err.code === err.PERMISSION_DENIED
-            ? "Izin lokasi ditolak. Aktifkan izin lokasi di peramban, atau cari lokasi dan klik peta."
-            : "Lokasi Anda tidak bisa ditentukan. Coba cari lokasi atau klik peta.",
+          error?.code === 1
+            ? "Izin lokasi ditolak. Aktifkan izin lokasi peramban, atau klik titik kos langsung di peta."
+            : error?.code === 2
+              ? "Posisi GPS tidak tersedia. Periksa layanan lokasi perangkat, atau klik titik kos langsung di peta."
+              : "GPS tidak mendapatkan posisi. Coba lagi di area terbuka atau klik titik kos langsung di peta.",
         );
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+    };
+
+    watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          if (!bestPosition || position.coords.accuracy < bestPosition.coords.accuracy) {
+            bestPosition = position;
+          }
+          if (position.coords.accuracy <= GPS_TARGET_ACCURACY_METERS) finish();
+        },
+        finish,
+        { enableHighAccuracy: true, timeout: GPS_SAMPLE_WINDOW_MS + 3000, maximumAge: 0 },
     );
+    if (finished) {
+        navigator.geolocation.clearWatch(watchId);
+        return;
+    }
+    timeoutId = setTimeout(() => finish(), GPS_SAMPLE_WINDOW_MS);
+  }
+
+  function onKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    const count = results.length;
+    if (event.key === "ArrowDown" && count) {
+      event.preventDefault();
+      setOpen(true);
+      setActive((current) => (current + 1) % count);
+    } else if (event.key === "ArrowUp" && count) {
+      event.preventDefault();
+      setOpen(true);
+      setActive((current) => (current <= 0 ? count - 1 : current - 1));
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      if (open && count) pick(results[active >= 0 ? active : 0]);
+    } else if (event.key === "Escape" && open) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.nativeEvent.stopImmediatePropagation();
+      setOpen(false);
+    }
   }
 
   const showList = open && (results.length > 0 || status !== "idle");
@@ -235,8 +286,8 @@ export function KosMap({
       <div className="relative border-b border-gray-200 p-2">
         <div
           className="flex gap-2"
-          onBlur={(e) => {
-            if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false);
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
           }}
         >
           <div className="relative min-w-0 flex-1">
@@ -251,13 +302,22 @@ export function KosMap({
               aria-label="Cari lokasi kos"
               autoComplete="off"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(event) => {
+                const value = event.target.value;
+                setQuery(value);
+                if (value.trim().length < 3) {
+                  setResults([]);
+                  setStatus("idle");
+                  setOpen(false);
+                  setActive(-1);
+                }
+              }}
               onFocus={() => results.length > 0 && setOpen(true)}
               onKeyDown={onKeyDown}
               placeholder="Ketik nama jalan atau area, misalnya Gempol Pasuruan"
               className="field pr-9 pl-9"
             />
-            {status === "loading" && (
+            {query.trim().length >= 3 && status === "loading" && (
               <Loader2 aria-hidden className="absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin text-gray-500" />
             )}
 
@@ -268,21 +328,21 @@ export function KosMap({
                 aria-label="Saran lokasi"
                 className="absolute inset-x-0 top-full z-[1000] mt-1 max-h-72 overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-pop"
               >
-                {results.length > 0 && status !== "loading" && usedQuery.toLowerCase() !== query.trim().replace(/\s+/g, " ").toLowerCase() && (
+                {results.length > 0 && status !== "loading" && usedQuery.toLowerCase() !== searchQueryNormalized(query) && (
                   <li role="presentation" className="px-3 pt-1.5 pb-1 text-xs text-gray-600">
                     Menampilkan hasil untuk &ldquo;{usedQuery}&rdquo;
                   </li>
                 )}
-                {results.map((place, i) => (
+                {results.map((place, index) => (
                   <li
                     key={`${place.lat},${place.lng},${place.title}`}
-                    id={`${LISTBOX_ID}-${i}`}
+                    id={`${LISTBOX_ID}-${index}`}
                     role="option"
-                    aria-selected={i === active}
-                    onMouseDown={(e) => e.preventDefault()}
+                    aria-selected={index === active}
+                    onMouseDown={(event) => event.preventDefault()}
                     onClick={() => pick(place)}
-                    onMouseEnter={() => setActive(i)}
-                    className={`cursor-pointer px-3 py-2 ${i === active ? "bg-primary-soft" : "hover:bg-gray-50"}`}
+                    onMouseEnter={() => setActive(index)}
+                    className={`cursor-pointer px-3 py-2 ${index === active ? "bg-primary-soft" : "hover:bg-gray-50"}`}
                   >
                     <span className="block text-sm font-semibold text-gray-900">{place.title}</span>
                     {place.subtitle && <span className="block text-xs text-gray-600">{place.subtitle}</span>}
@@ -293,12 +353,12 @@ export function KosMap({
                 )}
                 {status === "empty" && (
                   <li role="status" className="px-3 py-2 text-sm text-gray-700">
-                    Lokasi tidak ditemukan. Tambahkan nama kecamatan atau kota, lalu geser pin di peta ke titik kos Anda.
+                    Lokasi tidak ditemukan. Tambahkan nama kecamatan atau kota, lalu geser pin ke titik kos.
                   </li>
                 )}
                 {status === "error" && (
                   <li role="status" className="px-3 py-2 text-sm text-red-700">
-                    Pencarian lokasi gagal. Klik langsung di peta atau isi alamat secara manual.
+                    Pencarian lokasi gagal. Klik peta untuk memilih titik atau isi alamat secara manual.
                   </li>
                 )}
               </ul>
@@ -318,7 +378,12 @@ export function KosMap({
         </div>
       </div>
 
-      <div ref={containerRef} role="application" aria-label="Peta lokasi kos. Klik atau geser pin untuk menandai lokasi." className="relative isolate h-56 w-full bg-gray-100 sm:h-64">
+      <div
+        ref={containerRef}
+        role="application"
+        aria-label="Peta OpenStreetMap. Klik atau geser pin untuk menandai lokasi kos."
+        className="relative isolate h-56 w-full bg-gray-100 sm:h-64"
+      >
         {busy && (
           <span className="absolute top-2 right-2 z-[500] inline-flex items-center gap-1.5 rounded-md bg-white/95 px-2 py-1 text-xs text-gray-700 shadow-card">
             <Loader2 className="size-3 animate-spin" />
@@ -331,11 +396,15 @@ export function KosMap({
         <p aria-live="polite" className="min-h-5 text-xs text-gray-700">
           {message ??
             (latitude != null
-              ? "Geser pin untuk menyesuaikan lokasi."
-              : "Ketik nama jalan atau area beserta kecamatan atau kota, pilih saran, lalu geser pin ke titik kos Anda.")}
+              ? "Geser pin untuk menyesuaikan titik lokasi kos."
+              : "Cari lokasi, gunakan GPS, atau klik langsung pada peta. Geser pin tepat ke bangunan kos.")}
         </p>
-        <p className="mt-1 text-[11px] text-gray-600">Pencarian oleh Photon, data © kontributor OpenStreetMap.</p>
+        <p className="mt-1 text-[11px] text-gray-600">Peta © kontributor OpenStreetMap; pencarian lokasi oleh Photon.</p>
       </div>
     </div>
   );
+}
+
+function searchQueryNormalized(query: string) {
+  return query.trim().replace(/\s+/g, " ").toLowerCase();
 }

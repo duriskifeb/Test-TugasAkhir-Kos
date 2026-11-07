@@ -5,6 +5,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getAuthErrorMessage } from "@/lib/auth-error-message";
 import { AuthShell, AuthToast } from "@/components/ui/AuthShell";
 
 export default function RegisterPage() {
@@ -17,7 +18,6 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [role, setRole] = useState<"owner" | "staff">("owner");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,59 +34,61 @@ export default function RegisterPage() {
       setError("Password dan konfirmasi password tidak cocok.");
       return;
     }
+    if (password.length < 6) {
+      setError("Kata sandi minimal 6 karakter.");
+      return;
+    }
 
     setLoading(true);
 
     try {
-      // Peran akun ditetapkan oleh database (trigger handle_new_user). Di sini hanya
-      // memastikan pilihan pendaftar sesuai dengan undangan dari pemilik kos.
       const { data: invited, error: inviteError } = await supabase.rpc("is_staff_invited", {
-        p_email: email,
+        p_email: email.trim().toLowerCase(),
       });
-      if (inviteError) throw inviteError;
-
-      if (role === "staff" && !invited) {
-        setError("Email ini belum didaftarkan oleh pemilik kos. Minta pemilik menambahkannya di menu Kelola Akun Staf.");
-        return;
-      }
-      if (role === "owner" && invited) {
-        setError('Email ini terdaftar sebagai pengelola kos. Pilih "Pengelola Kos" untuk mendaftar.');
+      if (inviteError) {
+        setError(
+          inviteError.code === "PGRST202"
+            ? "Pendaftaran belum siap karena pembaruan database belum diterapkan. Silakan hubungi pengelola aplikasi."
+            : "Kami belum dapat memeriksa status undangan. Silakan coba lagi beberapa saat.",
+        );
         return;
       }
 
-      const { error: signUpError } = await supabase.auth.signUp({
-        email,
+      if (invited) {
+        setError("Email ini sudah diundang sebagai pengelola kos. Silakan buka tautan undangan yang dikirim ke email Anda.");
+        return;
+      }
+
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: email.trim().toLowerCase(),
         password,
         options: {
           data: {
             full_name: fullName,
             phone: phone,
-            role: role,
+            role: "owner",
           },
         },
       });
 
-      if (signUpError) throw signUpError;
+      if (signUpError) {
+        setError(getAuthErrorMessage(signUpError, "register"));
+        return;
+      }
 
-      setMessage("Registrasi berhasil! Silakan login dengan akun Anda.");
-      setTimeout(() => {
-        router.push("/login");
-      }, 2000);
-    } catch (err: any) {
-      setError(
-        err?.code === "PGRST202"
-          ? "Pendaftaran belum siap: migrasi database terbaru (is_staff_invited) belum dijalankan."
-          : err?.message || "Terjadi kesalahan yang tidak terduga.",
-      );
+      if (!signUpData.session) {
+        setMessage("Akun berhasil dibuat. Silakan cek email untuk verifikasi sebelum masuk. Periksa juga folder spam.");
+        return;
+      }
+
+      setMessage("Akun berhasil dibuat! Mengalihkan ke halaman masuk...");
+      window.setTimeout(() => router.push("/login"), 1500);
+    } catch (err: unknown) {
+      setError(getAuthErrorMessage(err, "register"));
     } finally {
       setLoading(false);
     }
   };
-
-  const roleOptions = [
-    { value: "owner", label: "Pemilik Kos" },
-    { value: "staff", label: "Pengelola Kos" },
-  ] as const;
 
   return (
     <AuthShell
@@ -94,7 +96,7 @@ export default function RegisterPage() {
       subtitle="Isi data berikut untuk membuat akun Build Kos Anda."
       aside={{
         title: "Mulai kelola kos Anda bersama Build Kos.",
-        text: "Buat akun pemilik kos atau pengelola kos, lalu masuk ke dashboard Anda.",
+        text: "Buat akun pemilik kos, lalu masuk ke dashboard Anda.",
       }}
       footer={
         <>
@@ -106,33 +108,6 @@ export default function RegisterPage() {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        <fieldset>
-          <legend className="mb-1.5 block text-sm font-medium text-gray-800">Daftar sebagai</legend>
-          <div className="grid grid-cols-2 gap-2">
-            {roleOptions.map((option) => (
-              <label
-                key={option.value}
-                className="flex cursor-pointer items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-3 text-sm font-semibold text-gray-700 transition-colors hover:border-gray-400 has-[:checked]:border-primary has-[:checked]:bg-primary-soft has-[:checked]:text-primary has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-primary"
-              >
-                <input
-                  type="radio"
-                  name="role"
-                  value={option.value}
-                  checked={role === option.value}
-                  onChange={() => setRole(option.value)}
-                  className="sr-only"
-                />
-                {option.label}
-              </label>
-            ))}
-          </div>
-          {role === "staff" && (
-            <p className="mt-2 text-sm text-gray-600">
-              Gunakan email yang didaftarkan pemilik kos di menu Kelola Akun Staf.
-            </p>
-          )}
-        </fieldset>
-
         <div>
           <label htmlFor="fullName" className="mb-1.5 block text-sm font-medium text-gray-800">
             Nama Lengkap

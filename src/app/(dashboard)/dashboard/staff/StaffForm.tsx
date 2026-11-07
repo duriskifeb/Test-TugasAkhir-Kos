@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { addStaff } from "./actions";
-import { Loader2, Plus, Users, UserPlus } from "lucide-react";
+import { Loader2, Plus, UserPlus } from "lucide-react";
 
 export function StaffForm({ tenants }: { tenants: { id: string; name: string }[] }) {
   const [loading, setLoading] = useState(false);
@@ -22,7 +22,7 @@ export function StaffForm({ tenants }: { tenants: { id: string; name: string }[]
         setMessage({ type: "success", text: result.success });
         (e.target as HTMLFormElement).reset(); // Clear form
       }
-    } catch (err) {
+    } catch {
       setMessage({ type: "error", text: "Terjadi kesalahan jaringan." });
     } finally {
       setLoading(false);
@@ -37,7 +37,7 @@ export function StaffForm({ tenants }: { tenants: { id: string; name: string }[]
         </div>
         <div>
           <h2 className="text-lg font-bold text-gray-900">Undang Karyawan Baru</h2>
-          <p className="text-sm text-gray-500">Karyawan bisa mengelola kamar tanpa akses ke pengaturan utama kos.</p>
+          <p className="text-sm text-gray-500">Pengelola akan menerima email untuk membuat kata sandi dan masuk ke akun.</p>
         </div>
       </div>
 

@@ -236,7 +236,7 @@ export function StepDataKos({ form, set, errors }: StepProps) {
         <h3 className="text-sm font-medium text-gray-800">Alamat Kos</h3>
         <KosMap latitude={form.latitude} longitude={form.longitude} onPick={onPick} />
         <p className="text-xs text-gray-600">
-          Alamat jalan dan wilayah mengikuti data peta pada posisi pin. Periksa kembali, lalu lengkapi nomor rumah atau RT/RW jika belum tersedia.
+          Untuk titik paling tepat, klik langsung lokasi bangunan kos pada peta. Tombol Lokasi saya mencari sinyal GPS terbaik hingga 12 detik; hasilnya bergantung pada perangkat dan kondisi area. Periksa alamat dan lengkapi RT/RW sesuai alamat resmi.
         </p>
 
         <Field id="ob-street" label="Nama jalan, nomor, RT/RW" error={errors.street}>

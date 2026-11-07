@@ -37,7 +37,12 @@ export default async function DashboardLayout({
   // Cek apakah user punya kos (atau staff)
   let role = profile?.role || "tenant";
   let boardingHouse = null;
-  let allTenants: any[] = [];
+  let allTenants: {
+    id: string;
+    status: string | null;
+    name: string;
+    subdomain: string | null;
+  }[] = [];
   let currentTenantId: string | null = null;
 
   // Check if they have a staff invite (requires RLS policy to allow reading their own email)
@@ -45,14 +50,14 @@ export default async function DashboardLayout({
     .from("tenant_staffs")
     .select("tenant_id, status")
     .eq("email", user.email ?? "")
+    .eq("status", "active")
+    .limit(1)
     .maybeSingle();
 
-  // Auto-correct role if they are actually staff
+  // Use the invitation record to identify staff accounts when a legacy profile has
+  // an incorrect role.
   if (staffData && role !== "staff") {
     role = "staff";
-    if (staffData.status === "pending") {
-      staffData.status = "active";
-    }
   }
 
   if (role === "staff") {

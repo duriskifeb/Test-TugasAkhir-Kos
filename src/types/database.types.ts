@@ -479,6 +479,7 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       approve_booking: { Args: { p_booking_id: string }; Returns: string }
       is_staff_invited: { Args: { p_email: string }; Returns: boolean }
+      activate_staff_invitation: { Args: never; Returns: boolean }
       setup_boarding_house: { Args: { p_data: Json }; Returns: string }
     }
     Enums: {

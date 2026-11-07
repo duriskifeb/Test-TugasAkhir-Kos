@@ -68,6 +68,18 @@ Sistem ini menerapkan isolasi hak akses yang ketat sesuai dengan 4 (empat) aktor
 - **Fitur Dinamis:** `@dnd-kit/core` & `@dnd-kit/sortable` untuk mekanisme drag-and-drop pada Website Builder.
 - **Visualisasi Data:** `chart.js` & `react-chartjs-2`.
 
+## Konfigurasi Undangan Pengelola
+
+Salin `.env.example` ke `.env.local`, lalu isi URL dan anon key Supabase, `SUPABASE_SERVICE_ROLE_KEY`, serta `NEXT_PUBLIC_SITE_URL` dengan URL aplikasi. Service role key hanya digunakan server dan tidak boleh diberi awalan `NEXT_PUBLIC_`.
+
+Di Supabase Dashboard, tambahkan URL aplikasi diikuti `/auth/callback` ke daftar **Authentication → URL Configuration → Redirect URLs**, dan pastikan pengiriman email Auth sudah dikonfigurasi. Tautan undangan akan memverifikasi email, meminta pengelola membuat kata sandi, lalu mengarahkannya ke halaman login.
+
+Setelah pembaruan aplikasi, terapkan migrasi `supabase/migrations/20261106000000_activate_staff_after_invite.sql` ke proyek Supabase. Migrasi ini memberi pengelola akses baca ke undangannya sendiri dan mengaktifkan akses dashboard setelah email diverifikasi.
+
+## Peta Lokasi Kos
+
+Peta menggunakan OpenStreetMap dan pencarian/geocoding menggunakan Photon; tidak membutuhkan API key. Klik atau geser pin secara manual untuk menetapkan koordinat bangunan dengan tepat. Akurasi GPS bergantung pada perangkat dan sinyal. Layanan publik ini mengikuti kebijakan penggunaan wajar dan tidak menjamin SLA atau ketersediaan untuk trafik tinggi.
+
 ---
 
 ## 📂 Struktur Direktori (Rekomendasi)
